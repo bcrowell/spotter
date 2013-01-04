@@ -1,0 +1,744 @@
+#!/usr/bin/perl
+
+# To do:
+#   Add functionality: drop students, edit student info, send message, add
+#   instructors.
+
+use Digest::SHA1;
+use Cwd;
+use JSON 2.0;
+use strict;
+
+my $user = getlogin();
+
+my $spotter_root_dir = "/usr/lib/cgi-bin/spotter";
+if (!-e $spotter_root_dir) {die "Directory $spotter_root_dir does not exist"}
+my $server_group = get_group($spotter_root_dir); # e.g., apache or www
+if (!$server_group) {die "Error getting group ID of file $spotter_root_dir"}
+
+my $class = {};
+
+print "Spotter's data is in the directory $spotter_root_dir, owned by the group $server_group.\n";
+if ($server_group eq getlogin()) {print "WARNING: The group of should be the group that apache runs under, but instead it appears to be your own group.\n"}
+if ($server_group ne 'www' and $server_group ne 'apache' and $server_group ne 'www-data') {print "WARNING: The group should be the group that apache runs under, which is typically www or apache or www-data, but it does not appear to be any of those.\n"}
+
+while (1) {
+
+  if (valid_class($class)) {
+    print "The current class is in the directory ".$class->{DIR}."\n";
+  }
+  print
+<<MENU;
+Enter
+  r  to show a roster
+  a  to add individual students
+  d  to drop individual students (packs up the student's information in a tarball)
+  re to reinstate individual students
+  di to disable the accounts of individual students (sets the disabled flag in the student's info file)
+  en to enable the accounts of individual students 
+  i  to import a roster into Spotter and OpenGrade
+  fc to translate a Fullerton College roster into a format that can be imported
+  c  to select a different class
+  e  to edit classes (add a new class, remove an old one)
+  ai to add an instructor
+  em to show the e-mail mailing list for the class
+  q  to quit
+MENU
+
+  my $menu_choice = <STDIN>;
+  chomp $menu_choice;
+  $menu_choice = lc($menu_choice);
+  $class->{USER} = $user;
+
+  if ($menu_choice eq 'r') {roster($class)}
+  if ($menu_choice eq 'a') {add_or_drop_students($class,'a')}
+  if ($menu_choice eq 'd') {add_or_drop_students($class,'d')}
+  if ($menu_choice eq 're') {add_or_drop_students($class,'re')}
+  if ($menu_choice eq 'di') {add_or_drop_students($class,'di')}
+  if ($menu_choice eq 'en') {add_or_drop_students($class,'en')}
+  if ($menu_choice eq 'i') {import_roster($class)}
+  if ($menu_choice eq 'fc') {translate_fc()}
+  if ($menu_choice eq 'c') {$class = pick_class($class)}
+  if ($menu_choice eq 'e') {edit_classes($class)}
+  if ($menu_choice eq 'ai') {$class = add_instructor($class)}
+  if ($menu_choice eq 'em') {email_list($class)}
+  if ($menu_choice eq 'q') {exit}
+} # end main loop
+
+
+
+#=================================================================
+#   edit_classes()
+#=================================================================
+sub edit_classes {
+  my $class = shift;
+  if (!valid_main_dir($class)) {$class = pick_main_dir($class)}
+  if (valid_main_dir($class)) {
+    print "Your account is in the directory ".$class->{MAIN_DIR}."\n";
+  }
+
+  while (1) {
+
+    print
+<<MENU;
+Enter
+  nt  to add a new term
+  nc  to add a new class
+  .  to return to the main menu
+MENU
+
+    my $menu_choice = <STDIN>;
+    chomp $menu_choice;
+    $menu_choice = lc($menu_choice);
+
+    my $main_dir = $class->{MAIN_DIR};
+
+    if ($menu_choice eq '.') {return}
+    if ($menu_choice eq 'nt') {
+      print "Each term has a name like s2003 for spring 2003, etc. The name must consist of\n";
+      print "a single letter followed by four digits.\n";
+      my $term = <STDIN>;
+      chomp $term;
+      if (!($term =~ m/^[a-z]\d\d\d\d$/)) {print "Illegal term name.\n"; return}
+      my $term_dir = "$main_dir/$term";
+      if (-e $term_dir) {print "Error -- the directory $term_dir already exists.\n"; return}
+      mkdir($term_dir) or die "Error creating directory $term_dir\n";
+      print "Directory $term_dir was successfully created.\n";
+      chmod 0771, $term_dir;
+      set_group($term_dir,$server_group); # dies if there's an error
+    }
+    if ($menu_choice eq 'nc') {
+      $class = pick_term($class);
+      my $term = $class->{TERM};
+      unless ($term =~ /[\w\d]/) {die "Programming error -- null string for term"}
+      my $term_dir = "$main_dir/$term";
+      if (!(-e $term_dir)) {print "Error -- the directory $term_dir doesn't exist.\n"; return}
+      print "Each class has a name, which must be a string of digits and lowercase letters.\n";
+      print "Please enter the name of the class to create.\n";
+      my $class_name = <STDIN>;
+      chomp $class_name;
+      if (!($class_name =~ m/^[a-z0-9]+$/)) {print "Illegal class name.\n"; return}
+      my $class_dir = "$term_dir/$class_name";
+			if (-e $class_dir) {print "Error -- the directory $class_dir already exists.\n"; return}
+      mkdir($class_dir) or die "Error creating directory $class_dir\n";
+      print "Directory $class_dir was successfully created.\n";
+      chmod 0771, $class_dir;
+      set_group($class_dir,$server_group); # dies if there's an error
+      print "Please enter a description of the class that will be displayed in Spotter, e.g.,\n";
+      print "Jane Doe's Chem 111 class at Antarctica State U.\n";
+      my $description = <STDIN>;
+      chomp $description;
+      $description =~ s/\"//g;
+      my $info_file = "$class_dir/info";
+      open(FILE,">$info_file") or die "Error opening info file for output";
+      print FILE "description=\"$description\"\n";
+      close(FILE);
+      system("chmod ug+rw $info_file");
+      set_group($info_file,$server_group); # dies if there's an error
+    }
+  }
+}
+
+
+#=================================================================
+#   roster()
+#=================================================================
+sub roster {
+  my $class = shift;
+  if (!valid_class($class)) {$class = pick_class($class)}
+  my $dir = $class->{DIR};
+  my @roster = list_students($dir);
+  my $cols = 3;
+  my $height = int((@roster)/$cols);
+  if ($height*$cols<@roster) {++$height}
+  for (my $row=0; $row<$height; $row++) {
+    for (my $col=0; $col<$cols; $col++) {
+      my $i = $row+$col*$height;
+      if ($i<@roster) {print (sprintf "%25s ",$roster[$i])}
+    }
+    print "\n";
+  }
+}
+
+#=================================================================
+#   email_list()
+#=================================================================
+sub email_list() {
+  my $class = shift;
+  my $what = shift; # a to add, d to drop
+  if (!valid_class($class)) {$class = pick_class($class)}
+  my $dir = $class->{DIR};
+  my @info_files = glob("$dir/*.info");
+  my @list = ();
+  foreach my $info(@info_files) {
+    open(F,"<$info") or die "error opening file $info for input, $!";
+    local $/; # slurp whole file
+    my $data = <F>;
+    close F;
+    if ($data=~m/state\=\"normal\"/ && $data=~m/email\=\"([^"]+)\"/) {
+      push @list,$1;
+    }
+  }
+  my $list = (join ',',@list)."\n";
+  print $list;
+  my $ff = 'email_list';
+  open(F,">$ff") or die "Error opening $ff for output, $!";
+  print F $list;
+  close F;
+  print "The list has also been written to the file email_list.\n";
+}
+
+#=================================================================
+#   add_or_drop_students()
+#=================================================================
+sub add_or_drop_students {
+  my $class = shift;
+  my $what = shift; # a to add, d to drop
+  if (!valid_class($class)) {$class = pick_class($class)}
+  my $dir = $class->{DIR};
+
+  roster($class);
+
+  if ($what eq 'a') {
+    while (1) {
+      print "Enter the student's last name, or hit return if you're done. If you enter lowercase, it will be changed to initial caps.\n";
+      my $last = <STDIN>;
+      chomp $last;
+      last if !$last;
+      print "Enter first name\n";
+      my $first = <STDIN>;
+      chomp $first;
+      print "Enter student id\n";
+      my $id = <STDIN>;
+      chomp $id;
+
+      add_one_student($last,$first,$id,$dir);
+
+    } # end loop to add one student after another
+  } # end if adding
+
+  if ($what eq 're') {
+    my @tarballs = glob("$dir/zz_dropped_*.tar.gz");
+    my $n = $#tarballs+1;
+    my $i = 1;
+    my @students = ();
+    foreach my $tarball(@tarballs) {
+      $tarball =~ m/zz_dropped_([^\.]+)\.tar\.gz/;
+      my $who = $1;
+      push @students,$who;
+      print "$i $who\n";
+      $i = $i+1;
+    }
+    if ($i==1) {print "No files matched $dir/zz_dropped_*.tar.gz -- no students to reinstate."}
+    print "Enter a number of a student to reinstate, or hit return to go back to the main menu.\n";
+    my $j = <STDIN>;
+    chomp $j;
+    return if !$j;
+    my $who = $students[$j-1];
+    my $save_dir = getcwd();
+    chdir $dir;
+    my $rel_file = "zz_dropped_$who.tar.gz";
+    my $tar_command = "tar -zxf $rel_file";
+    system($tar_command)==0 or die "Error executing command $tar_command, $!";
+    unlink $rel_file or print "Error deleting $rel_file, $!\n";
+    chdir $save_dir;
+  }
+
+  if ($what eq 'd'  || $what eq 'di' || $what eq 'en') {
+    my $verb =    {'d'=>'drop',   'di'=>'disable',   'en'=>'enable'}->{$what};
+    my $verbing = {'d'=>'dropping','di'=>'disabling','en'=>'enabling'}->{$what};
+    while (1) {
+      my @students = list_students($dir);
+      my $n = $#students+1;
+      my $i = 1;
+      foreach my $who(@students) {
+        print "$i $who\n";
+        $i=$i+1;
+      }
+      print "Enter a list of numbers, separated by commas, or just\n";
+      print "hit return if you're done $verbing students.\n";
+      my $victims = <STDIN>;
+      chomp $victims;
+      last if !$victims;
+      if (!($victims=~m/(\d+,)*\d+/)) {
+        print "Bad syntax:\n $victims\nOnly digits and commas are allowed.\n";
+        return;
+      }
+      my @victims = split /,/,$victims;
+			foreach my $victim(@victims) {
+				my $name = $students[$victim-1];
+        print "  $name\n";
+      }
+      print "$verb these students (y/n)?\n";
+      my $do_it = <STDIN>;
+      chomp $do_it;
+      if (lc($do_it) eq 'y') {
+  			foreach my $victim(@victims) {
+	  			my $name = $students[$victim-1];
+					my $file = "$dir/$name";
+					my $abs_pattern = "$file.*";
+					my $rel_pattern = "$name.*";
+  				print "  $verbing $name\n";
+          my $save_dir = getcwd();
+          chdir $dir;
+          if ($what eq 'en' || $what eq 'di') {
+            my $info_file = "$file.info";
+            open(FILE,"<$info_file") or die "Error opening file $info_file for input";
+            my $stuff = '';
+            while (my $line= <FILE>) {
+              $stuff = $stuff .  $line;
+            }
+            close(FILE);
+            $stuff =~ s/disabled=\"0\"/disabled=\"1\"/ if $what eq 'di';
+            $stuff =~ s/disabled=\"1\"/disabled=\"0\"/ if $what eq 'en';
+            open(FILE,">$info_file") or die "Error opening file $info_file for output";
+            print FILE $stuff;
+            close(FILE);
+          }
+          if ($what eq 'd') {
+            my $tar_command = "tar -zcf zz_dropped_$name.tar.gz $rel_pattern";
+            system($tar_command) == 0 or die "Error executing command $tar_command, $!"; # die so we don't delete the file
+            unlink glob($rel_pattern) or print "Error deleting $name, $!\n";
+				  }
+          chdir $save_dir;
+        }
+      } 
+    }
+  } # end if dropping
+} # end add_students()
+
+
+
+#=================================================================
+#   list_students
+#=================================================================
+sub list_students {
+  my $dir = shift;
+  $dir =~ s@/$@@; # strip any trailing slash
+  my $pattern = "$dir/*.info";
+  my @files =  glob($pattern);
+  my %list = ();
+  foreach my $file(@files) {
+    if ($file =~ m|/([\w\-\'\.]+)\.info$|) {
+      $list{$1} = 1;
+	  }
+  }
+  return sort keys %list;
+}
+
+#=================================================================
+#   import_roster()
+#=================================================================
+sub import_roster {
+  my $class = shift;
+
+  print "You can import a roster of students that is in a format like this:\n";
+  print "123456 Newton, Ike\n";
+  print "789123 Einstein, Al\n";
+  print "...\n";
+  print "Each line begins with the student's ID number, and then has the student's name\n";
+
+  my %id =();
+  my %last =();
+  my %first =();
+  my @keys = ();
+
+  print "Enter the name of the roster file, or hit return if you're not ready.\n";
+  my $file_name = <STDIN>;
+  chomp $file_name;
+  if ($file_name eq '') {return}
+  if (!-e $file_name) {print "Error: the file $file_name doesn't exist.\n"; return}
+
+  open(FILE,"<$file_name") or die "Error opening $file_name for input\n";
+
+  while (my $line = <FILE>) {
+    if ($line =~ m/^(\d+)\s+([^,]+),\s*([^\s]+)/) {
+      my ($id,$last,$first) = ($1,$2,$3);
+
+      $first = filter_roster($first);
+      $last = filter_roster($last);
+
+      my $key = $last."_".$first;
+      $key = lc($key);
+      $key =~ s/[^a-z\-_]//g;
+      $key=~m/_(.*)/;
+      print "$id,$last,$first,$key\n";
+      $id{$key} = $id;
+      $last{$key} = $last;
+      $first{$key} = $first;
+      push @keys,$key;
+    }
+    else {
+      print "Ignored bogus input line: $line\n";
+    }
+  }
+  close(FILE);
+
+  sort @keys;
+
+  open (F,">og_roster_section") or die "couldn't open og_roster_section";
+  my %h;
+  foreach my $key(@keys) {
+    my ($last,$first,$id) = ($last{$key},$first{$key},$id{$key});
+    $key =~ m/([^_]*)_([^ \.]*)/;
+    my ($l,$f) = ($1,$2);
+    $l =~ s/\"//g;
+    $f =~ s/\"//g;
+    $h{$key} = {'id'=>$id};
+    if ($l ne lc($last)) {$h{$key}->{'last'} = $last}
+    if ($f ne lc($first)) {$h{$key}->{'first'} = $first}
+  }
+  my $json= (new JSON);
+  $json->canonical([1]);
+  print F  '"roster":'.$json->encode(\%h),",\n";
+  close F;
+  print "The file og_roster_section has been created. This can be pasted.\n";
+  print "into an OpenGrade file. (After pasting it in, you'll need to set the\n";
+  print "password again so that the digital watermark will be valid.)\n";
+
+  if (!valid_class($class)) {$class = pick_class($class)}
+  my $dir = $class->{DIR};
+
+  foreach my $key(@keys) {
+    my ($last,$first,$id) = ($last{$key},$first{$key},$id{$key});
+    add_one_student($last,$first,$id,$dir);
+  }
+
+}
+
+sub add_one_student {
+    my $last = shift;
+    my $first = shift;
+    my $id = shift;
+    my $dir = shift;
+
+    my $last = ucfirst($last);
+    my $first = ucfirst($first);
+    my $key = $last."_".$first;
+    $key = lc($key);
+    $key =~ s/[^a-z\-_]//g;
+
+    my $p = hash("spotter".$id);
+
+    my $file = "$dir/$key.info";
+
+    if (-e $file) {
+      print "Error: file $file already exists\n";
+    }
+    else {
+      open(FILE,">$file") or die "unable to open file $file for output\n$!\n";
+      print FILE "last=\"$last\",first=\"$first\",id=\"$id\",disabled=\"0\"\n";
+      print FILE "state=\"notactivated\",password=\"$p\"\n";
+      close(FILE);
+      if (!-e $file) {die "Error creating $file\n"}
+      set_group($file,$server_group); # dies if there's an error
+      system("chmod ug+w $file");
+      print "Wrote file $file.\n";
+    }
+}
+
+sub filter_roster {
+    my $x = shift;
+    $x =~ s/\s+/ /g; # convert tabs or multiple blanks to single blanks
+    $x =~ s/[^\w '-]//g; # eliminate bogus characters
+
+    # Strip leading and trailing blanks:
+    $x =~ s/^\s+//;
+    $x =~ s/\s+$//;
+
+    # If all uc, change to initial caps:
+    if ($x eq uc($x)) {$x = ucfirst(lc($x))}
+
+    return $x;
+}
+#=================================================================
+#   valid_class()
+#=================================================================
+sub valid_class {
+    my $class = shift;
+    return exists $class->{DIR};
+}
+#=================================================================
+#   valid_main_dir()
+#=================================================================
+sub valid_main_dir {
+    my $class = shift;
+    return exists $class->{MAIN_DIR};
+}
+
+#=================================================================
+#   add_instructor()
+#=================================================================
+sub add_instructor {
+  my $args = shift; # hash ref
+  print "Enter the username of the instructor. This must consist only of lowercase\n";
+  print "letters, underscores, and digits. The first character must be a letter. For\n";
+  print "convenience, it should be the same as the instructor's Unix login name on this\n";
+  print "system.\n";
+  my $user = <STDIN>;
+  chomp $user;
+  if (!($user =~ m/^[a-z][a-z0-9_]*$/)) {print "Illegal username\n"; return $args}
+  $args->{USER} = $user;
+  $args = pick_main_dir($args); # prompts them to create it
+  my $main_dir = $args->{MAIN_DIR};
+  print "The instructor's main directory is $main_dir\n";
+  if (! -e $main_dir) {print "Error -- $main_dir doesn't exist."; return $args}
+  print "Enter the instructor's full name\n";
+  my $name = <STDIN>;
+  chomp $name;
+  print "Enter the instructor's e-mail address. (This will be available to logged-in students.)\n";
+  my $email = <STDIN>;
+  chomp $email;
+  print "Enter the instructor's server key\n";
+  my $server_key = <STDIN>;
+  chomp $server_key;
+  print "Enter the instructor's password\n";
+  my $password = <STDIN>;
+  chomp $password;
+  my $password_hash = hash("spotter_instructor_password".$password);
+  my $main_dir_info_file = "$main_dir/info";
+  if (! -e $main_dir_info_file) {
+    open(FILE,">$main_dir_info_file") or die "Error creating $main_dir_info_file, $!";
+    print FILE "description=\"$name's classes\"\n";
+    print FILE "disable=\"0\"\n";
+    print FILE "expire=\"\"\n";
+    close(FILE);
+  }
+  my $info_file = "$main_dir/$user.instructor_info";
+  open(FILE,">$info_file") or die "Error opening $info_file for output\n";
+  print FILE "name=\"$name\"\n";
+  print FILE "email=\"$email\"\n";
+  print FILE "server_key=\"$server_key\"\n";
+  print FILE "password_hash=\"$password_hash\"\n";
+  close(FILE);
+  if (! -e $info_file) {die "Error creating $info_file"}
+  print "The file $info_file was created successfully.\n";
+  return $args;
+}
+#=================================================================
+#   pick_main_dir()
+#=================================================================
+sub pick_main_dir {
+
+my $args = shift; # hash ref
+
+my $user;
+if (exists $args->{USER}) {
+  $user = $args->{USER};
+}
+else {
+  print "Enter your username\n";
+  my $user = <STDIN>;
+  chomp $user;
+}
+die if ! $user;
+
+my $default_dir = "$spotter_root_dir/$user";
+if (exists $args->{MAIN_DIR}) {$default_dir = $args->{MAIN_DIR}}
+
+print "Enter the directory where the classes are (default=$default_dir)\n";
+my $main_dir = <STDIN>;
+chomp $main_dir;
+if ($main_dir eq '') {$main_dir = $default_dir}
+# The following line seemed to cause problems...???
+#if ('' ne glob $main_dir) {$main_dir = glob $main_dir} # I don't understand why the test is necessary.
+
+if (! -e $main_dir) {
+  print "Directory $main_dir does not exist. Create it (y/n)?\n";
+  my $create = <STDIN>;
+  chomp $create;
+  if (lc($create) eq 'y') {
+    mkdir($main_dir);
+    system("chmod ug+rw $main_dir");
+  }
+}
+if (-e $main_dir) {
+  print "Directory $main_dir exists.\n";
+}
+
+$args->{MAIN_DIR} = $main_dir;
+$args->{USER} = $user;
+return $args;
+}
+#=================================================================
+#   pick_term()
+#=================================================================
+sub pick_term {
+
+my $args = shift; # hash ref
+
+
+$args = pick_main_dir($args);
+my $main_dir = $args->{MAIN_DIR};
+my $user = $args->{USER};
+
+my @terms = ();
+foreach my $t(glob "$main_dir/*") {
+    if (-d $t) {
+      $t =~ m@([^/]+)$@;
+      push @terms, $1;
+    }
+}
+
+my $best = '';
+my ($best_year,$best_season);
+my %season_order = ('w'=>1,'s'=>2,'f'=>3);
+print "Terms: ";
+foreach my $term(@terms) {
+    print "$term ";
+    $term =~ m@(\w)(\d+)@;
+    my ($season,$year) = ($1,$2);
+    if ($best eq '' || $year>$best_year ||
+          ($year==$best_year && $season_order{$season}>$season_order{$best_season})
+      	) {
+      	$best_year = $year;
+        $best_season = $season;
+        $best = $term;
+    }
+}
+print "\n";
+
+if (exists $args->{TERM}) {$best = $args->{TERM}}
+print "Which term (default=$best)?\n";
+my $term = <STDIN>;
+chomp $term;
+if ($term eq '') {$term = $best}
+unless ($term =~ /[\w\d]/) {die "Programming error -- null string for term in pick_term"}
+
+my $term_dir = "$main_dir/$term";
+if (! -e $term_dir) {print "The directory $term_dir doesn't exist. Maybe you need to create it.\n"; return}
+print "The following classes exist in the directory $term_dir:\n";
+my @classes = ();
+foreach my $f(glob "$term_dir/*") {
+    if (-d $f) {
+      $f =~ m@([^/]+)$@;
+      push @classes, $1;
+    }
+}
+
+foreach my $class(@classes) {
+    print "$class ";
+}
+print "\n";
+
+$args->{TERM} = $term;
+return $args;
+}
+#=================================================================
+#   pick_class()
+#=================================================================
+sub pick_class {
+
+	my $args = shift;
+
+  $args = pick_term($args);
+  if (! defined $args) {return}
+
+  my $default_class = '';
+  if (exists $args->{CLASS}) {$default_class = $args->{CLASS}}
+  print "Which class";
+  if ($default_class ne '') {print " (default=$default_class)"}
+  print "?\n";
+  my $class = <STDIN>;
+  chomp $class;
+  if ($class eq '') {$class = $default_class}
+
+
+  my $main_dir = $args->{MAIN_DIR};
+  my $term = $args->{TERM};
+  my $dir = "$main_dir/$term/$class";
+
+  print "The class's directory is $dir.\n";
+
+  return {USER=>$args->{USER},MAIN_DIR=>$main_dir,TERM=>$term,CLASS=>$class,DIR=>$dir};
+
+}
+#=================================================================
+
+sub hash {
+  my $x = shift;
+  return Digest::SHA1::sha1_base64($x);
+}
+
+#=================================================================
+#   translate_fc()
+#=================================================================
+sub translate_fc {
+
+  print "To get the roster off of the Fullerton College server, log in to WebStar, go to Class Roster,\n";
+  print "and cut and paste from the relevant part of the rendered page (not the html source), which will be titled 'Summary Faculty Class List.'\n";
+  print "Remember to do both the students who are enrolled and the ones who are on the waiting list.\n";
+
+  print "Enter the name of the input file, or hit return if you're not ready.\n";
+  my $file_name = <STDIN>;
+  chomp $file_name;
+  if ($file_name eq '') {return}
+  if (!-e $file_name) {print "Error: the file $file_name doesn't exist.\n"; return}
+
+  print "Enter the name of the output file.\n";
+  my $out_file = <STDIN>;
+  chomp $out_file;
+  if ($out_file eq '') {return}
+
+  open(FILE,"<$file_name") or die "Error opening $file_name for input\n";
+  open(OUTFILE,">$out_file") or die "Error opening $out_file for output\n";
+
+  my $count = 0;
+  my ($name,$id) = (undef,undef);
+  my @results = ();
+  while (my $line = <FILE>) {
+    # First line below is an enrolled student. Second is a student who is on the waiting list.
+    # 1  0     Decker, Jeffrey S.      @00155842       Registered--Web         Fullerton College        4.000  Enter   Enter           E-mail
+    # 1       Hill, Kathleen D.       @01336906       Wait Listed     Fullerton College       0.000           E-mail
+    if ($line =~ m/\A\d+(?:\s+\d+)?\s+(['\p{IsAlpha}][^@]+)\s+\@(\d+)/) {
+      ($name,$id) = ($1,$2);
+      $name =~ s/\s*Confidential//;
+      push @results,[$id,$name];
+      $count = $count + 1;
+    }
+  }
+
+  foreach my $student(sort {$a->[1] cmp $b->[1]} @results) {
+    print OUTFILE "$student->[0] $student->[1]\n";
+  }
+  print "Read $count student records\n";
+
+  close FILE;
+  close OUTFILE;
+}
+
+#=================================================================
+#   get_group
+#=================================================================
+
+sub get_group {
+  my $file = shift;
+  # Could do this with stat function, but I'd rather work with symbolic group name, not numerical ID.
+  my $listing = `ls -ld $file`; # output like --->  drwxr-xr-x    5 root     apache       4096 Jun 16  2003 /var/www/cgi-bin/spotter
+  $listing =~ m/^\s*[^\s]+\s+\d+\s+\w+\s+([\w\-\d]+)/;
+  my $group = $1;
+  return $group;
+}
+
+#=================================================================
+#   set_group
+#=================================================================
+
+sub set_group {
+  my $file = shift;
+  my $group = shift;
+  if (($file=~m/\.\./) || !($file=~m/^[\w\/\.\-]+$/)) {
+    die "Illegal characters in filename, setting group of file $file"; # security
+  }
+  my $groups_i_am_in = `groups`;
+  my $q = quotemeta $group;
+  unless ($groups_i_am_in =~ /$group/) {die "You need to be a member of group $group in order to do this. The command groups tells you what groups you're a member of. To add yourself to a group, edit /etc/group, log out, and log back in."}
+  my $cmd = "chgrp $group $file";
+  system("$cmd");
+  my $err = $!;
+  if (get_group($file) ne $group) {
+    die "Error setting group of $file to $group, $err, command $cmd";
+  }
+}
+
+ 

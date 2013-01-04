@@ -1,0 +1,9 @@
+AA_new_version
+*.pdf
+*~
+*.aux
+*.log
+*.idx
+*.toc
+*.ilg
+*.bak

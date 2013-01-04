@@ -1,0 +1,191 @@
+<?xml version="1.0"?>
+<!DOCTYPE spotter [
+
+ <!ELEMENT spotter ((log_file|toc_level|toc|num|problem)*)>
+ <!ATTLIST spotter title CDATA "Contents">
+
+  <!-- By default, the log file has the same name as the xml file, but
+       with extension .log. For security reasons,
+       the extension must not contain any characters
+       except for alphanumerics and underscores. -->
+  <!ELEMENT log_file EMPTY>
+  <!ATTLIST log_file ext CDATA "log">
+                      
+  <!-- When students are navigating to a particular problem, they need to
+       see a table of contents, which can have a hierarchical structure,
+       e.g. volumes subdivided into chapters. The level is 0 for the highest
+       level (e.g. volumes) and goes 1, 2, ... for lower levels of structure.
+       A CGI application would normally display level 0 surrounded by h2 tags,
+       level 1 surrounded by h3, etc. 
+       Example: <toc_level level="0" type="chapter"/>
+  -->
+  <!ELEMENT toc_level EMPTY>
+  <!ATTLIST toc_level level CDATA #REQUIRED
+                      type  ID #REQUIRED>
+
+  <!-- <toc> tags surround sets of problems.
+       Example: <toc type="chapter" title="Introduction">...(problems)...</toc>
+       If the num attribute isn't supplied, it defaults to the previous num plus one.
+  -->
+  <!ELEMENT toc ((problem|toc)*)>
+  <!ATTLIST toc type IDREF #REQUIRED
+                title CDATA  ""
+                num CDATA #IMPLIED>
+  
+  <!-- We don't want big hassles when we renumber problems. Each problem has a symbolic
+       id, which is associated with its number. The <num> tags can all go in the same place
+       at the top of the file, so it's easy to change them if necessary.
+       Example: <num id="inclined_plane" label="37"/>
+  -->
+  <!ELEMENT num EMPTY>
+  <!ATTLIST num id ID #REQUIRED
+                label CDATA #REQUIRED>
+
+  <!-- A <problem> tag can have several parts, corresponding to more than one
+       quantity the student is asked to find. 
+       In the future, might want to add a type="mc" for multiple choice,
+       type="free" for free response, not checked by the software.
+  -->
+  <!ELEMENT problem (options|find|var|domain|ans)+>
+  <!ATTLIST problem id IDREF #REQUIRED
+                    type CDATA #FIXED "expression">
+  
+ 
+
+  <!-- The <find> tag lists a quantity that the student is supposed to find.
+  
+       The <var> tag specifies a variable that may appear in the solution, and
+       gives a general range of numerical values that might make sense for that
+       variable; this range is needed so that the software can pick random
+       values for the variables to test whether the student's expression is
+       equivalent to a particular right or wrong answer.
+             
+       For a correct answer, use an empty ans tag, <ans exp="..."/> ( or an
+       <ans> tag containing only other tags, with no text).  It's not
+       necessary to specify multiple answers when the answers are numerically
+       equal to each other. For instance, <ans exp="a+b"/> will match an input
+       of "b+a" from the student. In the rare cases where there is more than one
+       correct answer, and they are not numerically equal, you can give more than
+       one correct answer.
+       Incorrect answers don't need to be specified explicitly, since there is
+       an infinite number of possibilities. However, if you know a certain incorrect
+       answer is common, then you can provide feedback to students who give that
+       answer by using an <ans> tag with text inside.
+              
+       If the <var> and <ans> tags are nested
+       inside a <find> tag, then they apply only within its scope. Otherwise
+       they apply to the whole problem.
+       
+       The <ans> tags can only refer to variables that have already
+       been declared.
+  -->
+  
+  <!-- Example: <find>Final angular velocity</find> 
+  -->
+  <!ELEMENT find (#PCDATA|options|domain|var|ans)*>
+  <!ATTLIST find id CDATA "1">
+  
+
+  <!-- Example: <var sym="tau">torque</var> 
+   -->
+  <!ELEMENT var EMPTY>
+  <!ATTLIST var sym CDATA #REQUIRED
+                type (float|integer)  "float"
+                units CDATA ""
+                min CDATA  "0"
+                max CDATA  "1"
+                min_imag CDATA  "0"
+                max_imag CDATA  "0">
+  
+  <!-- Example: <ans e="ttau/I"></ans> 
+       filter="abs(~)" means only compare absolute value; there are implied
+       	parens around the dummy variable symbol ~
+       tol_type can be "mult" or "add"
+   -->
+  <!ELEMENT ans (#PCDATA)>
+  <!ATTLIST ans e CDATA #REQUIRED
+                filter CDATA "~"
+                tol_type CDATA "mult"
+                tol CDATA "0.00001">
+ 
+ <!--  By default in symbolic problems, the software will tell
+       the student if her answer is a constant multiple of the correct
+       answer, or is equal to the correct answer plus a constant. These
+       defualts can be modified with the timesconstant and plusconstant
+       rules. As a special case, the software checks at runtime
+       for answers that are pure constants, e.g. "2/7" or "4pi"; such
+       an answer will not be matched by the timesconstant and plusconstant
+       options (even if they were explictly set to "yes" in the <problem>).
+       
+       By default in numerical problems, and answer that equals the correct
+       result except for a power of 10 is flagged as a conversion mistake.
+       This can be overridden with conversionmistake="no".
+       expressions="yes" - allows arithmetic expressions to be used in answers to numerical problems
+       units="yes" - allows the student to supply units by typing them in, e.g. "1 kg" or
+       		"1000 g" are both ok
+       unitlist - gives a comma-separated list of possible units;
+            the student is supplied with a pop-up
+       		menu of units, and must choose one; her input is multiplied by this unit;
+       		she is not allowed to type in units as well
+       
+	<options> tags should surround the <find> or <ans> tags to which they apply
+  -->
+<!ELEMENT options ((find|ans)*)>
+ <!ATTLIST options    times_constant (yes|no)  "yes"
+                    sign (yes|no)  "yes"
+                    plus_constant (yes|no)  "yes"
+                    conversion_mistake (yes|no)  "yes"
+                    expressions (yes|no)  "no"
+                    units (yes|no)  "no"
+                    unit_list CDATA #IMPLIED>
+   
+<!--
+  Interfacing to javascript.
+  -->
+  <!ELEMENT data (#PCDATA)>
+  <!ATTLIST data  array CDATA #IMPLIED
+                  var   CDATA #IMPLIED>
+   
+]>
+
+
+<!-- ======================================================================= -->
+<spotter title="Demonstration of Spotter">
+
+<log_file ext="log"/>
+
+<num id="demo1" label="1"/>
+<num id="demo2" label="2"/>
+
+
+
+   <problem id="demo1">
+      <find id="1">
+          Solve the equation cx-7cb-a=0 for x in terms of the other variables.
+           (See the bottom of the
+          page for information on how to enter your expression.)
+          Suggestions: Try rearranging the terms of your result in two different
+          ways, and see what happens. Try intentionally entering an incorrect answer,
+          or an answer that has variables in it that aren't even part of the problem.
+           <var sym="a">a variable</var>
+           <var sym="b">another variable</var>
+           <var sym="c">yet another variable</var>
+           <ans e="7b+a/c"/>
+      </find>
+     </problem>
+     
+   <problem id="demo2">
+      <find id="1">
+          A square has sides of length s. What is its area? (See the bottom of the
+          page for information on how to enter your expression.)
+          Suggestion: Try putting in an answer that doesn't even come out to
+          have the right units for an area. Also, try writing your expression 
+          incorrectly, without the ^ symbol, to see how the software responds.
+           <var sym="s" units="m">the length of the sides</var>
+           <ans e="s^2"/>
+      </find>
+     </problem>
+     
+ 
+
+</spotter>

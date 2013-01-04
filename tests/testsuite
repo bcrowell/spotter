@@ -1,0 +1,240 @@
+# Run this test suite using the command
+#               make test
+#       or
+#		./Calc.pl -pc -i testsuite -o testsuite.out
+# Most tests are designed to output true (1) if the test
+# succeeded. Can diff against an old version to tell if a
+# recent change broke something.
+# The shortcoming of this setup is that I can't test whether
+# errors are handled correctly. When making changes to the
+# code, should run this suite, and then see if I can reproduce
+# the error messages in Messages.pm.
+#------------------------------------------------
+# Is the test suite itself functioning? The outputs from the
+# following two lines should be 1, then 0.
+#------------------------------------------------
+1 eq 1
+1 eq 2
+#------------------------------------------------
+# Test functionality of the calculator.
+#------------------------------------------------
+1;1		# commands separated by a semicolon
+1;;1 	# empty command
+1; ;1 	# whitespace treated as empty command
+a=1; a	# assign to a variable
+pi eq 3.1415926535897931	# built-in constant pi
+|i| eq 1					# built-in constant i
+arg(i) eq pi/2
+ln(e) eq 1					# built-in constant e
+x2=3; x2+2 eq 5	# Test that variables that end in digits are parsed correctly.
+#------------------------------------------------
+# Test all the binary operators with unitless real numbers.
+#------------------------------------------------
+|-1| eq 1
+(2,3) eq 3		# comma operator just leaves both on stack
+(2+2) eq 4
+(+2) eq (0+2)	# unary plus
+(5-3) eq 2
+(-2) eq (0-2)	# unary minus
+(2*5) eq 10
+(6/3) eq 2
+(2**4) eq 16
+(2^4) eq 16
+((1 ft)->in) eq (12 in)
+a=2; b=3; ab eq 6	# implied mult
+a=2; b=3; a b eq 6	# implied mult with whitespace
+not 0
+not not 1
+1 and 1
+not (1 and 0)
+not (0 and 1)
+not (0 and 0)
+1 or 1
+1 or 0
+0 or 1
+not (0 or 0)
+0 xor 1
+1 xor 0
+not (0 xor 0)
+not (1 xor 1)
+7 mod 3 eq 1
+(-2) mod 3 eq 1
+#------------------------------------------------
+# Lexer 
+#------------------------------------------------
+# simple stuff that might not have been caught elsewhere:
+.5 eq (1/2)
+0.5 eq (1/2)
+2. eq 2
+2.0 eq 2
+#------------------------------------------------
+# Test whether the look-ahead feature of the lexer works.
+#------------------------------------------------
+# It tries the longest token it can find, but if what's
+# left after that can't be lexed, it tries all the other
+# possibilities. In the following, the longest token it
+# can take is mi/m (units of miles per meter), but this
+# results in an error because f isn't a defined variable.
+# Seeing this, it takes the shorter token mi instead
+# and lexes everything correctly.
+#------------------------------------------------
+mi=1; mf=1; mi/mf eq 1
+# Similar:
+a=7; ab=3; bc=2 ; abc eq 14
+#------------------------------------------------
+# Parser (just stuff that might not have been caught elsewhere)
+#------------------------------------------------
+(2*[3+7]) eq 20
+(2*{3+7}) eq 20
+|2*[3-4]| eq 2
+{2+|3-4|} eq 3
+(3+7)(5+5) eq 100	# implied mult with parens
+(3+7)|5+5| eq 100	# implied mult with parens
+(3+7){5+5} eq 100	# implied mult with parens
+(3+7) (5+5) eq 100	# implied mult with parens and whitespace
+(3+7) |5+5| eq 100	# implied mult with parens and whitespace
+(3+7) {5+5} eq 100	# implied mult with parens and whitespace
+m=7; 3 m eq 300 cm	# disambiguate units that have same name as a variable
+m=7; 3m eq 21		# disambiguate units that have same name as a variable
+#------------------------------------------------
+# A few simple tests with complex numbers.
+#------------------------------------------------
+1 ne i
+i eq i
+sqrt(-1) eq i
+exp(pii) eq -1
+#------------------------------------------------
+# Parser: test precedence
+#------------------------------------------------
+1+2/3 eq 1.66666666666666666666666666
+2/3+1 eq 1.66666666666666666666666666
+#------------------------------------------------
+# Parser: test associativity
+#------------------------------------------------
+4-2+3 eq 5	# would give -1 if +- associativity was messed up
+10/5*3 eq 6	# would give 2/3 if */ associativity was messed up; produces warning
+10^2^3 eq 10^8 # would give 10^6 if ^ assoc. was messed up
+#------------------------------------------------
+# Test functions of one argument, sample values
+#------------------------------------------------
+exp(2pii) eq 1
+ln e eq 1
+log 10 eq 1
+log10 10 eq 1
+sqrt(2) eq 1.4142135623730951
+sin(pi/4)^2 eq 0.5
+cos(pi/4)^2 eq 0.5
+tan(pi/4) eq 1
+sec(pi/4)^2 eq 2
+csc(pi/4)^2 eq 2
+cot(pi/4) eq 1
+sinh 1 eq (e-1/e)/2
+cosh 1 eq (e+1/e)/2
+tanh 1 eq (e-1/e)/(e+1/e)
+sech 1 eq 2/(e+1/e)
+csch 1 eq 2/(e-1/e)
+coth 1 eq (e+1/e)/(e-1/e)
+asin(1) eq pi/2
+acos(0) eq pi/2
+atan(1) eq pi/4
+asinh((e-1/e)/2) eq 1
+acosh((e+1/e)/2) eq 1
+atanh((e-1/e)/(e+1/e)) eq 1
+abs(-1) eq 1
+abs(i) eq 1
+Re(3+4i) eq 3
+Im(3+4i) eq 4
+arg(1+i) eq pi/4
+conj(1+i) eq 1-i
+3! eq 6
+5!! eq 15
+Gamma(4) eq 6
+Gamma(.5) eq sqrt(pi)
+Gamma(1) eq 1
+Gamma(-i) eq -0.154949828301811+0.498015668118357i
+Gamma(i) eq -0.154949828301811-0.498015668118357i
+ln_Gamma(4) eq ln(6)
+atomize((1 m)/(1 cm)) eq 100
+#------------------------------------------------
+# Test functions of one argument, identities
+#------------------------------------------------
+(sin .3)^2+(cos .3)^2 eq 1
+exp(ln(3+4i)) eq 3+4i
+10^log(2-i) eq 2-i
+sqrt(.3)^2 eq .3
+#------------------------------------------------
+# Units
+#------------------------------------------------
+(1 J/N-m) eq 1
+(1 m)+(37 cm) eq 137 cm
+(1 m)-(10 cm) eq 90 cm
+(1 m)/(1 cm) eq 100
+(1 m)->cm eq 100 cm
+(1 m)/(1 s) eq (1 m/s)
+.5(9.8 m/s2)(1 s)^2 eq 4.9 m
+(1 N-m)/(1 kg.m2/s2) eq 1
+sin(45 deg) eq 1/sqrt 2
+log(10 kg) eq 1
+sqrt(1 m2) eq 1 m
+abs(-7 s) eq 7 s
+abs(1 V+(1 V)i) eq (sqrt 2)(1 V)
+|1 V+(1 V)i| eq (sqrt 2)(1 V)
+Re(7 V+(3 V)i) eq 7 V
+Im(7 V+(3 V)i) eq 3 V
+arg(1 V+(1 V)i) eq 45 deg
+conj(1 V+(1 V)i) eq 1 V-(1 V)i
+atomize(1 kg) eq 1000 g
+base_units(4 cm) eq m
+units(4 m) eq units(5 m)
+(13 in) mod (1 ft) eq (1 in)
+# test constructor for Rational, in the case of negative input:
+(1 m)^-1 eq (1 m-1)
+# more similar tests; integers:
+(1 m)^2 eq (1 m2)
+# half-integers (special-cased for performance):
+[(1 m)^(1/2)]^2 eq (1 m)
+# other rationals:
+[(1 m)^(3/2)]^2 eq (1 m3)
+#------------------------------------------------
+# A bug fix. Before I fixed this bug, expressions
+# like 5 sin x were not interpreted as implied
+# multiplications. The following tests the bug fix
+# both prefix and postfix operators.
+#------------------------------------------------
+2 3! eq 12
+2 exp(1) eq 2e
+#------------------------------------------------
+# A bug fix. Before I fixed this bug, the unit "min"
+# was interpreted as milli-inches.
+#------------------------------------------------
+(1 min) eq (60 s)
+#------------------------------------------------
+# The most ticklish part of the lexer is situations where
+# something can be parsed either as units or as a symbol:
+#------------------------------------------------
+m=3; 2m eq 6
+m=3; 2 m eq 200 cm
+1 Gm eq 10^9 m
+G=2; m=3; Gm eq 6
+G=2; m=3; 1 Gm eq 10^9 m
+#------------------------------------------------
+# A bug fix. The milli prefix was getting lexed
+# as meters, e.g. "mm" became "m","m".
+#------------------------------------------------
+1 mm eq 10^-3 m
+#------------------------------------------------
+# A bug fix. Because of the space before the "s"
+# in sin, this was getting parsed as (1)(s)(in)...
+#------------------------------------------------
+1 sin (90 deg) eq 1
+#------------------------------------------------
+# A bug fix. This was getting lexed as d e g.
+#------------------------------------------------
+(1/deg) eq 57.2957795130823
+#------------------------------------------------
+# A fix for the bogus blank bug. We don't want the
+# g to get parsed as a unit just because there's
+# a blank before it.
+#------------------------------------------------
+f=1; g=1; f + g eq 2
+#
