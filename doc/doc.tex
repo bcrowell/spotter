@@ -138,9 +138,7 @@ Make sure Perl 5.6 or later is installed on your system.
 
 \mysubsection{download Spotter}
 Download the
-source code and unpack the archive using the command
-\verb@tar -zxvf spotter.tar.gz@, which will create the directory
-\verb@spotter_distro@ with the source code in it. Try running the
+source code. Try running the
 calculator program that comes with Spotter, using the command
 \verb@./Calc.pl@. If it doesn't run, you probably don't have Perl
 installed correctly, or you have an older version of Perl, or your
@@ -165,39 +163,33 @@ or \verb@su@ on Linux,
 so that you have privileges.
 
 \mysubsection{installing the CGI}
-If you have Spotter in your own directory, copy all the \verb@.pm@ and \verb@.cgi@ files into
-the cgi-bin directory.
-The files whose names begin with
-\verb@admin_@, which are perl scripts you can use to administer
-your Spotter installation, and those shouldn't be placed in the cgi-bin directory.
-On MacOS X, the cgi-bin directory is /Library/WebServer/CGI-Executables.
-On Debian Linux it's /usr/lib/cgi-bin. 
+There is some stuff near the top of the file \verb@Makefile@ that is set appropriately
+for the Apache web server running on Debian or Ubuntu linux, but may need to be changed
+for other web servers or operating systems.
+%
+\verb@CGI_GENERAL = /usr/lib/cgi-bin@ should be the cgi-bin on your machine (e.g.,
+\verb@/Library/WebServer/CGI-Executables@ on MacOS). 
+%
+\verb@WEB_SERVER_GROUP = www-data@ should be the group that your web server runs in.
+%
+\verb@WEB_SERVER_DATA = /var/www@ should be the directory where your web server stores the documents it serves.
 
-Use \verb@chmod +x filename@ on all the .cgi, .pm, and .pl files that
-came with Spotter, which are now in the cgi-bin. Put a copy of your spotter.xml file
-containing your answers into the same place.
+Do the command \verb@make install@.
 
-Within the cgi-bin directory, create a subdirectory called spotter, and make it
-writeable by the group that apache runs as (www-data on Linux).
-
-Inside the web server's data directory (not the cgi-bin directory), create
-a directory \verb@spotter_js/x.y.z@, where \verb@x.y.z@ is the version number found
-near the top of \verb@Spotter.cgi@.
-Copy all the \verb@.js@ files into that directory.
+The sample answer file \verb@sample.xml@ will have been automatically placed in
+\verb@/usr/lib/cgi-bin/answers@. Your own real answer files should go in the same
+place.
 
 \mysubsection{libraries}
-You need to install perl's XML::Parser, XML::Simple, and Digest::SHA1 libraries.
-
-On Debian or Ubuntu Linux, do this:
-
-\verb@apt-get install libxml-parser-perl libxml-simple-perl libdigest-sha1-perl@
+You need to install the perl libraries XML::Parser, XML::Simple, and JSON.
+On Debian or Ubuntu Linux, you can do this with the command \verb@make depend@.
 
 On other systems, use that system's software packaging system.
 
 \mysubsection{the answer file and the log file}
 
 If your answer file is called \verb@spotter.xml@, then by default your log file will be
-called \verb@spotter.log@. It will be created in the subdirectory spotter/log, inside the
+called \verb@spotter.log@. It will be created in the subdirectory spotter3/data/log, inside the
 cgi-bin directory.
 If you make mistakes in your answer file that cause errors at runtime, the error
 messages will show up in this file. (They are not displayed in the browser. This
@@ -208,16 +200,12 @@ information about the answer file.)
 If you're running Spotter on your desktop machine, the URL you use will be
 something like this:
 
-\noindent\verb@http://localhost/cgi-bin/Spotter.cgi?what=check&file=spotter@
+\noindent\verb@http://localhost/cgi-bin/spotter3/Spotter.cgi?what=check&file=sample@
 
 If you're running it on a machine elsewhere, replace \verb@localhost@ with the
 relevant domain name. You can also try changing \verb@?what=check@ to
 \verb@?what=check&debug=@, which will make the CGI print out a little
 more information, such as the name of the log file.
-
-\mysubsection{possible problems}
-\emph{Spotter.cgi doesn't run.} Wait 15 minutes and try again. On some webhosts,
-there may be a time delay before the server realizes it's there.
 
 \emph{The server gives a generic error message when Spotter.cgi runs, saying
 that there's something wrong with the software, and you should contact the
@@ -875,7 +863,7 @@ about the students' answers. You only need to create the \verb@cgi-bin/spotter@
 directory manually. Everything below that level can be set up using the
 \verb@admin_spotter@ script, as described later in this section.
 
-\noindent\includegraphics{doc_figs/filetree}\label{interfacing}
+\noindent\includegraphics{doc_figs/file-tree}\label{interfacing}
 
 \newcommand{\dir}[1]{\noindent\textbf{#1} --- }
 \newcommand{\file}[1]{\noindent{}#1 --- }

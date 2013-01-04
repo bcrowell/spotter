@@ -3,7 +3,7 @@ package FileTree;
 use strict;
 
 use utf8;
-use Digest::SHA1;
+use Digest::SHA;
 
 # FileTree->new(...)
 sub new {
@@ -184,7 +184,7 @@ sub current_date_for_diff_file() {
 
 sub diff_hash {
   my $text = shift;
-	my $hash = Digest::SHA1::sha1_base64($text);
+	my $hash = Digest::SHA::sha1_base64($text);
 	$hash =~ s@/@_@g; # Unix filenames shouldn't have slashes in them.
 	$hash =~ s@\+@_@g; # Plus signs also seem to cause problems.
   return $hash;  

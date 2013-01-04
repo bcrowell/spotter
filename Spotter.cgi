@@ -14,7 +14,7 @@
 
 use strict;
 
-my $version_of_spotter = '2.5.2'; # When I change this, I need to rename the subdirectory of spotter_js, e.g., from spotter_js/2.4.0 to spotter_js/2.4.1
+my $version_of_spotter = '3.0.0'; # When I change this, I need to rename the subdirectory of spotter_js, e.g., from spotter_js/2.4.0 to spotter_js/2.4.1
 my $spotter_js_dir = "/spotter_js/$version_of_spotter";
 
 
@@ -43,17 +43,29 @@ use Getopt::Std;
 use XML::Parser;
 use XML::Simple;
 use CGI;
-use Digest::SHA1;
+use Digest::SHA;
 use POSIX (); # the () keeps it from importing a huge namespace
 use Data::Dumper;
 use Time::HiRes;
 use File::stat;
+use JSON;
+use Cwd;
 
 use utf8;
 
 #$| = 1; # Set output to flush directly (for troubleshooting)
 
-if (!-e 'spotter') {die "the directory 'spotter' doesn't exist within the cgi-bin directory; please create it and make it writeable by the user that apache runs as"}
+my $data_dir = 'data'; # relative to cwd, which is typically .../cgi-bin/spotter3
+my $script_dir = Cwd::cwd();
+
+if (!-e $data_dir) {die "The subdirectory '$data_dir' doesn't exist within the directory ${script_dir}. This should have been done by the makefile."}
+foreach my $data_subdir("cache","throttle","log") {
+  my $d = "$data_dir/$data_subdir";
+  if (!(-d $d)) {
+    mkdir $d or die "Error creating directory $d, $!";
+  }
+}
+
 
 #----------------------------------------------------------------
 # Fighting against DOS attacks, spambots, etc.:
@@ -75,7 +87,7 @@ my $ip = $ENV{REMOTE_ADDR};
 if ($ip=~m/^85\.91/) {exit(0)} # 85.91 was the source of a DOS attack against me, in 2006
 
 my $date_string = current_date_string_no_time();
-my $throttle_dir = "spotter/throttle";
+my $throttle_dir = "$data_dir/throttle";
 my $blocked_file_name = "$throttle_dir/blocked_$date_string";
 my $dos_log = "$throttle_dir/dos_log";
 my $ip = $ENV{REMOTE_ADDR};
@@ -136,7 +148,7 @@ else { # not the same as last ip
 $SpotterHTMLUtil::cgi = new CGI;
 Url::decode_pars();
 
-my $tree = FileTree->new(DATA_DIR=>"spotter/",CLASS=>Url::par("class"));
+my $tree = FileTree->new(DATA_DIR=>"${data_dir}/",CLASS=>Url::par("class"));
 
 #----------- subroutine for checking passwords
 sub my_password_checker {
@@ -149,7 +161,7 @@ sub my_password_checker {
 }
 
 
-our $basic_file_name = "spotter";
+our $basic_file_name = "spotter"; # default name of answer file
 if (Url::par_set("file")) {
   $basic_file_name = Url::par("file");
   $basic_file_name =~ s/[^\w\d_\-]//g; # don't allow ., because it risks allowing .. on a unix system
@@ -158,8 +170,7 @@ if (Url::par_set("file")) {
 #----------------------------------------------------------------
 # Find the XML file.
 #----------------------------------------------------------------
-our $xmlfile = $basic_file_name.".xml";
-mkdir ('spotter') unless -d 'spotter';
+our $xmlfile = "answers/".$basic_file_name.".xml";
 
 if (-e $xmlfile) { # don't create foo.log if foo.xml doesn't exist
   Log_file::set_name($basic_file_name,"log"); # has side effect of creating log file, if necessary
@@ -271,8 +282,7 @@ SpotterHTMLUtil::PrintHeaderHTML($spotter_js_dir);
 # Cache a js version for use on the client side.
 #----------------------------------------------------------------
 # optimization: use a simplified version of the xml file if that's all we need
-my $cache_dir = 'spotter/cache'; # also in AnswerResponse
-mkdir $cache_dir unless -d $cache_dir;
+my $cache_dir = "$data_dir/cache"; # also in AnswerResponse
 my $js_cache = "$cache_dir/${basic_file_name}_js_cache.js";
 my $cache_parsed_xml = "$cache_dir/${basic_file_name}_parsed_xml.dump";
 #--- Write stuff to cache files, if cache files don't exist or are out of date:
@@ -1461,12 +1471,12 @@ sub get_query_info {
           my $query = $ENV{'QUERY_STRING'};
           my $ip = $ENV{REMOTE_ADDR};
           my $date_string = current_date_string_no_time();
-          my $throttle_dir = "spotter/throttle";
+          my $throttle_dir = "$data_dir/throttle";
           if (! -e $throttle_dir) {mkdir($throttle_dir)}
           my $when = time;
           my $who = '';
           if ($login->logged_in()) {$who = $login->username()}
-          my $query_sha1 = Digest::SHA1::sha1_base64($description); 
+          my $query_sha1 = Digest::SHA::sha1_base64($description); 
           print "<p>get_query_info gives query=$query, query_sha1=$query_sha1, description=$description=</p>\n" if $debug;
           return ($query,$ip,$date_string,$throttle_dir,$when,$who,$query_sha1);
 }
@@ -2399,8 +2409,7 @@ sub set_name {
   my $ext = shift;
   $ext =~ m/^\.?([a-zA-Z0-9\_]{1,30})$/;
   if (!$1) {$ext="log"} else {$ext = $1;}
-  my $dir = "spotter/log";
-  mkdir('spotter') unless -d 'spotter'; # make parent dir first, if necessary
+  my $dir = "$data_dir/log";
   mkdir($dir) unless -d $dir;
   $log_file_name = "$dir/$basic_file_name.$ext";
   if (!-e $log_file_name) {

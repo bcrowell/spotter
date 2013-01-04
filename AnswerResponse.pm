@@ -15,7 +15,7 @@ package AnswerResponse;
 use strict;
 
 use Data::Dumper;
-use Digest::SHA1;
+use Digest::SHA;
 
 use Spotter;
 use Expression;
@@ -310,7 +310,7 @@ sub identical_answer {
       # about the filter, and anyway the filter is just an internal thing.
     }
 
-  my $cache_dir = 'spotter/cache'; # also in Spotter.cgi
+  my $cache_dir = 'data/cache'; # also in Spotter.cgi
   if (! -e $cache_dir) {mkdir($cache_dir)}
   my $cache_file_base = $cache_dir . '/' . $problem_label;
 
@@ -553,7 +553,7 @@ sub rand_range {
 
 sub hash {
   my $string = shift;
-  return Digest::SHA1::sha1_hex($string);
+  return Digest::SHA::sha1_hex($string);
 }
 
 1;

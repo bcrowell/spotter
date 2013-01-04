@@ -3,7 +3,7 @@ package Login;
 use strict;
 
 use utf8;
-use Digest::SHA1;
+use Digest::SHA;
 
 # cookie is username^date^auth, where
 # auth =  H[H[h+password]+date]
@@ -184,7 +184,7 @@ sub ritual_purification {
 
 sub hash {
   my $x = shift;
-  return Digest::SHA1::sha1_base64($x);
+  return Digest::SHA::sha1_base64($x);
 }
 
 

@@ -4,7 +4,7 @@
 #   Add functionality: drop students, edit student info, send message, add
 #   instructors.
 
-use Digest::SHA1;
+use Digest::SHA;
 use Cwd;
 use JSON 2.0;
 use strict;
@@ -657,7 +657,7 @@ sub pick_class {
 
 sub hash {
   my $x = shift;
-  return Digest::SHA1::sha1_base64($x);
+  return Digest::SHA::sha1_base64($x);
 }
 
 #=================================================================
