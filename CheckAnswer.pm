@@ -2,13 +2,13 @@
 # global variables.
 
 sub handle_mathematical_answer {
-        my ($answer_param,$p,$login,$xmlfile,$hierarchy) = @_;
+        my ($answer_param,$p,$login,$xmlfile,$hierarchy,$data_dir) = @_;
         my $output = '';
         my ($messages, $ans,$unit_list, $units_allowed,$vars) = poke_and_prod_student_answer($answer_param,$p);
         $output = $output . $messages;
         my ($query,$ip,$date_string,$throttle_dir,$when,$who,$query_sha1,
                             $exempt,$anon_forbidden,$forbidden_because_anon,$throttle_ok,$throttle_message,$problem_label) 
-            = set_up_query_stuff($login,$p->description(),$xmlfile,$ans,$hierarchy);
+            = set_up_query_stuff($login,$p->description(),$xmlfile,$ans,$hierarchy,$data_dir);
         $output = $output . respond_to_query($ans,$throttle_ok,$p,$units_allowed,$problem_label,$login,$tree,$query,$throttle_dir,
                             $date_string,$ip,$who,$when,$query_sha1,$throttle_message,$unit_list,$vars,$answer_param);
         return $output;
@@ -159,7 +159,8 @@ sub set_up_query_stuff {
           my $xmlfile = shift;
           my $ans = shift;
           my $hierarchy = shift; # e.g. [ book chapter problem find  ]
-          my ($query,$ip,$date_string,$throttle_dir,$when,$who,$query_sha1) = get_query_info($login,$description);
+          my $data_dir = shift;
+          my ($query,$ip,$date_string,$throttle_dir,$when,$who,$query_sha1) = get_query_info($login,$description,$data_dir);
           my $exempt = file_exempt_from_throttling($xmlfile,$throttle_dir); # Grant exemptions to throttling for certain answer files, e.g., demo files.
           my $anon_forbidden = anon_forbidden_from_this_ip($ip,$throttle_dir); # Forbid anonymous use from certain addresses, e.g., your own school.
           my $forbidden_because_anon = ($anon_forbidden && $who eq '');

@@ -60,7 +60,13 @@ use Cwd;
 
 use utf8;
 
-#$| = 1; # Set output to flush directly (for troubleshooting)
+print run_spotter();
+
+#========================================================================================================
+# A nasty, brutish, and long subroutine that generates all the html output as its return value.
+#========================================================================================================
+
+sub run_spotter {
 
 my $data_dir = 'data'; # relative to cwd, which is typically .../cgi-bin/spotter3
 my $script_dir = Cwd::cwd();
@@ -410,7 +416,7 @@ if (! -e $js_cache) {
   }
 
   if (Url::par_is("login","form")) {
-    $out = $out .  do_login_form();
+    $out = $out .  do_login_form($tree);
   }
   if (Url::par_is("login","set_cookie")) {
     SpotterHTMLUtil::debugging_output("username=".$SpotterHTMLUtil::cgi->param('username'));
@@ -448,7 +454,7 @@ if (! -e $js_cache) {
       if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"starting to parse the xml file")}
       if (Url::par_set("find")) {
         my $output;
-        do_a_problem($xmlfile,$cache_parsed_xml,\$fatal_error,\$output);
+        do_a_problem($xmlfile,$cache_parsed_xml,\$fatal_error,\$output,$data_dir);
         if ($fatal_error ne '') {Log_file::write_entry(TEXT=>"fatal error from do_a_problem: $fatal_error")}
         $out = $out .  $output;
       }
@@ -496,7 +502,7 @@ if (! -e $js_cache) {
     }
 
     if (Url::par_is("what","account")) {
-      $out = $out .  do_account();
+      $out = $out .  do_account($login,$tree);
     }
 
     if (Url::par_is("what","email")) {
@@ -515,7 +521,7 @@ if (! -e $js_cache) {
         }
       }
       if ($bogus eq '') {
-        $out = $out .  do_email($username,$own_email);
+        $out = $out .  do_email($username,$own_email,$tree);
       }
       else {
         $out = $out .  "<p>$bogus</p>\n";
@@ -524,7 +530,7 @@ if (! -e $js_cache) {
 
     if (Url::par_is("what","grades")) {
       if ($login->logged_in()) {
-        $out = $out .  do_grades();
+        $out = $out .  do_grades($login,$tree);
       }
       else {
         $out = $out .  "You must be logged in to check your grade.<p>\n";
@@ -533,7 +539,7 @@ if (! -e $js_cache) {
 
     if (Url::par_is("what","answers")) {
       if ($login->logged_in()) {
-        $out = $out .  do_answers();
+        $out = $out .  do_answers($login,$tree);
       }
       else {
         $out = $out .  "You must be logged in to look at your answers.<p>\n";
@@ -544,7 +550,7 @@ if (! -e $js_cache) {
       my $which_journal = Url::par("journal");
       if ($which_journal ne '') {
         if ($login->logged_in()) {
-          $out = $out .  do_edit_journal($which_journal);
+          $out = $out .  do_edit_journal($which_journal,$login,$tree);
         }
         else {
           $out = $out .  "You must be logged in to edit.<p>\n";
@@ -556,7 +562,7 @@ if (! -e $js_cache) {
       my $which_journal = Url::par("journal");
       if ($which_journal ne '') {
         if ($login->logged_in()) {
-          $out = $out .  do_view_old($which_journal);
+          $out = $out .  do_view_old($which_journal,$login,$tree);
         }
       }
     }
@@ -567,7 +573,7 @@ if (! -e $js_cache) {
 
 
 sub do_a_problem {
-  my ($xmlfile,$cache_parsed_xml,$fatal_err_ref,$output_ref) = @_;
+  my ($xmlfile,$cache_parsed_xml,$fatal_err_ref,$output_ref,$data_dir) = @_;
   my $err = '';
   my $xml_data = get_xml_tree($xmlfile,$cache_parsed_xml,\$err);
   if ($err ne '') {
@@ -577,7 +583,7 @@ sub do_a_problem {
   else {
     my ($output_early,$output_middle,$output_late);
     my %params = Url::param_hash();
-    my $err = do_answer_check($xml_data,\$output_early,\$output_middle,\$output_late,\%params);
+    my $err = do_answer_check($xml_data,\$output_early,\$output_middle,\$output_late,\%params,$login,$xmlfile,$data_dir);
     if ($err ne '') {$fatal_error = $err}
     $$output_ref = $output_early.$output_middle.$output_late;
     if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"done parsing the xml file")}
@@ -623,10 +629,14 @@ if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"done writing html outpu
 
 #--------------------------------------------------------------------------------------------------
 
-# Print all the html that has been accumulated above.
-print $out;
+
+return $out; # all the html that has been accumulated above.
 
 #--------------------------------------------------------------------------------------------------
+} # end of run_spotter
+
+#========================================================================================================
+#========================================================================================================
 
 sub get_xml_tree {
   my ($xmlfile,$cache_parsed_xml,$err_ref) = @_;
@@ -664,7 +674,9 @@ sub get_xml_tree {
 
 sub do_edit_journal {
   my $journal = shift;
+  my $login = shift;
   my $username = $login->username();
+  my $tree = shift;
   my ($text,$is_locked) = $tree->read_journal($username,$journal);
   my $edited_version = $SpotterHTMLUtil::cgi->param('journalText');
   if ($edited_version || $SpotterHTMLUtil::cgi->param('submitJournalButton')) { # The second clause allows users to submit an empty journal.
@@ -704,6 +716,8 @@ sub do_edit_journal {
 sub do_view_old {
   my $journal = shift;
   my $version = $SpotterHTMLUtil::cgi->param('version');
+  my $login = shift;
+  my $tree = shift;
   my $username = $login->username();
   my $out = '';
   $out = $out . "<h2>Viewing old version $version of $journal</h2>\n";
@@ -727,6 +741,8 @@ sub do_view_old {
 }
 
 sub do_answers {
+  my $login = shift;
+  my $tree = shift;
   my $out = '';
   my ($err,$answers) = WorkFile::list_all_correct_answers_for_one_student($tree,$login->username());
   if ($err eq '') {
@@ -743,6 +759,8 @@ sub do_answers {
 }
 
 sub do_grades {
+  my $login = shift;
+  my $tree = shift;
   local $/; # slurp the whole file
   my $out = '';
   my $err = 0;
@@ -758,6 +776,7 @@ sub do_grades {
 sub do_email {
       my $username = shift;
       my $own_email = shift;
+      my $tree = shift;
 
       my $out = '';
 
@@ -827,6 +846,8 @@ sub link_to_send_email {
 }
 
 sub do_account {
+  my $login = shift;
+  my $tree = shift;
   my $email = $tree->get_student_par($login->username(),'email');
   my $emailpublic = $tree->get_student_par($login->username(),'emailpublic');
   my $url = Url::link(REPLACE=>'login',REPLACE_WITH=>'set_cookie',REPLACE2=>'what',REPLACE_WITH2=>'check');
@@ -834,6 +855,7 @@ sub do_account {
 }
 
 sub do_login_form {
+  my $tree = shift;
   my $step = 1;
   my $username = '';
   my $disabled = 0;
@@ -898,6 +920,9 @@ sub do_answer_check {
       $output_middle_ref,
       $output_late_ref,
       $params_ref,
+      $login,
+      $xmlfile,
+      $data_dir
       )
          = @_;
   my %params = %$params_ref;
@@ -973,7 +998,7 @@ sub do_answer_check {
 
   if ($p->type eq 'expression') {
     my $a = $SpotterHTMLUtil::cgi->param("answer");
-    $output[1] = $output[1] . handle_mathematical_answer($a,$p,$login,$xmlfile,\@hierarchy);
+    $output[1] = $output[1] . handle_mathematical_answer($a,$p,$login,$xmlfile,\@hierarchy,$data_dir);
   }
   else {
     $output[0] = $output[0] . generate_js_for_data_element($stuff{'data'});
@@ -1172,6 +1197,7 @@ HTML
 sub get_query_info {
           my $login = shift;
           my $description = shift;
+          my $data_dir = shift;
 
           my $debug = 0;
 
