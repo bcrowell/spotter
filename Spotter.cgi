@@ -653,30 +653,6 @@ sub get_xml_tree {
   return $xml_data;
 }
 
-# Automatically adds one to month, so Jan=1, and, if year is less than
-# 1900, adds 1900 to it. This should ensure that it works in both Perl 5
-# and Perl 6.
-sub current_date {
-    my $what = shift; #=day, mon, year, ...
-    my @tm = localtime;
-    if ($what eq "sec") {return $tm[0]}
-    if ($what eq "min") {return $tm[1]}
-    if ($what eq "hour") {return $tm[2]}
-    if ($what eq "day") {return $tm[3]}
-    if ($what eq "year") {my $y = $tm[5]; if ($y<1900) {$y=$y+1900} return $y}
-    if ($what eq "month") {return ($tm[4])+1}
-}
-
-sub current_date_string() {
-    return sprintf "%04d-%02d-%02d %02d:%02d:%02d", current_date("year"), current_date("month") ,
-    current_date("day"),current_date("hour"),current_date("min"),current_date("sec");
-}
-
-sub current_date_string_no_time() {
-    return sprintf "%04d-%02d-%02d", current_date("year"), current_date("month") ,
-    current_date("day");
-}
-
 
 
 sub do_edit_journal {
