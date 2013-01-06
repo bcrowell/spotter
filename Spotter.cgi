@@ -1000,15 +1000,6 @@ sub do_answer_check {
   return '';
 }
 
-# The following is for debugging: lets me print out complex data structures in the browser.
-sub dumpify {
-  my $r = shift;
-  my $t = Dumper($r);
-  # clean up so asciimath won't mung it
-  $t =~ s/\_/\\_/g;
-  $t =~ s/\$/\\\$/g;
-  return $t;
-}
 
 sub get_problem_from_tree {
   my ($tree,$find,$stuff_ref) = @_;
@@ -1597,24 +1588,6 @@ sub record_work {
   return '';
 }
 
-sub renice_myself {
-  my $incr = shift; # has to be positive
-  my $prio = getpriority(0,0);
-  my $max = 18; # I think 19 or 20 can cause the process to starve or be terminated
-  my $new = $prio+$incr;
-  if ($new>$max) {$new=$max}
-  if ($new>$prio) {
-    POSIX::nice($new-$prio)
-  }
-}
-
-sub modified {
-  my $file = shift;
-  my $sb = stat($file);
-  return undef if ! defined $sb;
-  return $sb->mtime;
-}
-
 # Shift as much work onto the user's CPU as possible. Write JS code that has lots of data
 # from the answer file (but not the answers themselves).
 sub jsify {
@@ -1786,32 +1759,4 @@ STUFF
   };
   &$do_toc($head);
   close JS;
-}
-
-sub hash_to_js {
-  my $filter = shift;
-  my %h = @_;
-  my @z;
-  $filter = '.*' if $filter eq '';
-  foreach my $k(keys %h) {if ($k=~/^$filter$/) {my $x=single_quotify($h{$k}); push @z,"'$k':$x"}}
-  return '{'.join(',',@z).'}';
-}
-
-sub hashref_union_to_hash {
-  my $a = shift;
-  my $b = shift;
-  $a={} if ! ref $a;
-  $b={} if ! ref $b;
-  return (%$a,%$b);
-}
-
-sub append_xml_char_data {
-  my $already = shift;
-  my $new = shift;
-  $already = '' if ! defined $already;
-  return $already if $new =~/^\s*$/;
-  $new =~ s/^\s*//; # trim leading whitespace
-  $new =~ s/[\n\r\t]/ /;
-  return $new if $already eq '';
-  return "$already $new";
 }
