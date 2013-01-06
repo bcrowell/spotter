@@ -1,3 +1,15 @@
+is_locked=<<__message__
+This is your final version, and it can no longer be edited.
+__message__
+
+edit_page=<<__html__
+$instructions
+<h2>Last Saved Version</h2>$cooked_text<p/>
+<h2>Edit</h2>
+$form
+$old
+__html__
+
 instructions=<<__instr__
 <p>If you scroll down, first you'll see your current version of your text with all the formatting, and then below that you'll 
 see a window in which you can edit your text. To make a paragraph break, put in a blank line between the paragraphs. 

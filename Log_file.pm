@@ -35,7 +35,6 @@ sub write_entry {
     @_
   );
   my $text = $args{TEXT};
-  #print "logging text=$text=<br/>\n";
   
   my ($s,$min,$h,$d,$mo,$y) = (localtime)[0..5];
   my $t = [Time::HiRes::gettimeofday]; # more fine grained, for profiling
@@ -50,11 +49,11 @@ sub write_entry {
   
   my $ok = open(LOG_FILE, ">>$log_file_name");
   if (!$ok) {
-    print "logging failed\n";
-    return;
+    return undef;
   }
   print LOG_FILE $stuff;
   close(LOG_FILE);
+  return 1;
  }
 
 }

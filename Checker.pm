@@ -138,7 +138,7 @@ sub new {
 
 sub debug_print {
   my $self = shift;
-  print $self->debug_dump();
+  # print $self->debug_dump(); #  I don't think I use this anymore, and in any case I don't want something low level printing.
 }
 
 sub debug_dump {

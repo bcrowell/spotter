@@ -16,6 +16,10 @@ doc:
 	pdflatex doc
 	pdflatex doc
 
+s:
+	touch strings/* tint
+	make Tint.pm
+
 Tint.pm: strings/* tint
 	perl -e 'if (-e "$(NEW_TINT)") {system("cp $(NEW_TINT) .")}'
 	chmod +x tint

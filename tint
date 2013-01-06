@@ -25,6 +25,8 @@ $key_pat = "(?:\\w+\\.)*\\w+" # matches, e.g., foo.bar.baz or --.bar (meaning tw
 $unescaped_dollar_pat = '(?<!\\\\)\\$' # requires ruby 1.9
 $ref_pat = '((?:'+$unescaped_dollar_pat+'){1,2})('+$key_pat+')'
 
+$files_processed = [] # avoid processing the same file twice
+
 #--------- process command-line arguments
 
 def fatal_error(message)
@@ -60,6 +62,9 @@ def process_node!(
   if node_type=='file' then
     filename = node_val
     text = nil
+    path = File.expand_path(filename)
+    if $files_processed.include?(path) then return end # don't process the same file twice
+    $files_processed.push(path)
     begin
       File.open(filename,'r') { |f|
         text = f.gets(nil) # nil means read whole file
@@ -78,46 +83,65 @@ end
 
 # helper routine for process_node!(); modifies dict
 def handle_text!(dict,node,dir,text)
-  #$stderr.print "handle_text!(#{text})\n"
+  # $stderr.print "handle_text!(#{protect_special(text)})\n" # qwe
   return if text=~/\A\s*\Z/
   if !(text=~/<</) then
     # The whole file defines a single entry.
-    merge_text_node!(dict,node,protect_dot(text))
+    merge_text_node!(dict,node,protect_special(text))
   else 
     # more than one entry in file:
     handled = false
+    # ----- a single-line assignment -----
     if text=~/\A\s*(#{$key_pat})\s*=\s*<<([^\n]*)>>\s*([\s\S]*)/s then
       handled = true
       (k,v,rest) = [$1,$2,$3]
       v.gsub!(/(?<!\\)\\n/,"\n") # allow, e.g., foo=<<bar \n baz>>
-      v = protect_dot(v)
+      v = protect_special(v)
       merge_text_node!(dict,node+'.'+k,v)
-      process_node!(dict,node,dir,'text',rest)
+      process_node!(dict,node,dir,'text',rest) if rest=~/<</
     end
+    # ----- a here doc -----
     if !handled && text=~/\A\s*(#{$key_pat})\s*=\s*<<([^\n]*)\n([\s\S]*)/s then
                 # [\s\S] means anything that is whitespace or isn't whitespace, i.e., any character.
                 # I don't understand why the /s doesn't allow me to do this with ., but it doesn't work.
-      # a here doc
       handled = true
-      (k,terminator,rest) = [$1,$2,$3]
-      x = rest.split(/(?<=\n)#{Regexp::quote(terminator)}/)
-      merge_text_node!(dict,node+'.'+k,protect_dot(x.shift))
-      process_node!(dict,node,dir,'text',x.join(terminator))
+      (k,terminator,rest) = [$1,$2,$3] # rest includes the string itself, the terminator, and stuff after that in the file
+      x = rest.split(/(?<=\n)#{Regexp::quote(terminator)}/) # use split to avoid greedy matching
+      rhs = x.shift
+      merge_text_node!(dict,node+'.'+k,protect_special(rhs))
+      rest_of_file = x.join(terminator) # we've shifted off the first element, so what's left in x is the rest of the file
+      process_node!(dict,node,dir,'text',rest_of_file) if rest_of_file=~/<</
     end
-    fatal_error("file with << not handled, text=#{text}=") if !handled
+    # ----- a comment -----
+    if !handled then
+      # If we get here, then we weren't able to parse the file using regexes like /\A\s*.../. That means
+      # the head of the file is a comment. However, it must contain a <<, because otherwise it would have been
+      # parsed as a whole-file definition.
+      comment = text.split(/#{$key_pat}\s*=\s*<</).shift # the leading comment; use split so the match isn't greedy
+      text =~ /\A#{Regexp::quote(comment)}([\s\S]*)\Z/ or die fatal_error("programming error in handle_text!, can't match comment??")
+      rest = $1
+      handle_text!(dict,node,dir,rest)
+    end
   end
 end
 
-def protect_dot(s)
-  return s.gsub(/(?<!\\)\\./,"@@@protect_dot@@@") # so we can have, e.g., <<Hello, $name\.>>; this works because
-                                                  # @ isn't a legal character in variable names
+def protect_special(s)
+  s = s.gsub(/(?<!\\)\\\./,"@@@protect_dot@@@")
+    # So we can have, e.g., <<Hello, $name\.>>. This works because
+    # @ isn't a legal character in variable names. The negative lookbehind is so that we
+    # won't do anything when the user has forced a literal backslash with \\, which happens
+    # to be followed by a .
+  s = s.gsub(/(?<!\\)\\\$/,"@@@protect_dollar@@@")
+  return s
 end
 
-def unprotect_dot(s)
-  return s.gsub(/@@@protect_dot@@@/,".")
+def unprotect_special(s)
+  s = s.gsub(/@@@protect_dot@@@/,".")
+  s = s.gsub(/@@@protect_dollar@@@/,"$")
 end
 
 def merge_text_node!(dict,node,text)
+  # $stderr.print "merge_text_node!(#{text})\n" # qwe
   args = []
   text.scan(/#{$ref_pat}/) { |sigil,x|
     args.push(x)
@@ -131,6 +155,7 @@ end
 # make a string like "hello, $name" into [["lit","hello, "],["ref","$name"]]
 def chop_up_string(s)
   result = []
+  # $stderr.print "chop_up_string_messy(#{s})=",chop_up_string_messy(s).join(','),"\n" # qwe
   chop_up_string_messy(s).each { |x|
     if x=~/#{$ref_pat}/ then
       result.push(["ref",x])
@@ -144,7 +169,7 @@ end
 # make a string like "hello, $name" into ["hello, ","$name"]
 # This is not meant to be called externally, only used by chop_up_string().
 def chop_up_string_messy(s)
-  if s=~/(.*)(#{$ref_pat})(.*)/ then
+  if s=~/([\s\S]*)(#{$ref_pat})([\s\S]*)/ then
     (a,b,c) = [$1,$2,$5] # ... $3 and $4 are internal to $ref_pat, and we don't need them here
     # If a or c is a null string, it gets cleaned up later by chop_up_string().
     return [chop_up_string_messy(a),b,chop_up_string_messy(c)].flatten
@@ -206,7 +231,7 @@ end
 # Take, e.g., a function defined by
 #   {'text'=>[["lit","Hello, "],["ref","$name"]],'args'=>['$name']}
 # and do partial application to fix $name so it's no longer an argument.
-# Both text and value are functions, not bare strings or arrays.
+# Both text and value are arrays representing functions, not bare strings or arrays.
 # There is no recursion; we just do one level of partial application.
 def interpolate_in_text!(text,ref,value)
   # $stderr.print "interpolating text=#{text},ref=#{ref},value=#{value}\n"
@@ -238,7 +263,7 @@ def clean_up_text!(text)
       # $stderr.print "in clean_up_text, ",JSON.generate(text)," ... ",JSON.generate(l),"\n"
       result.push(["lit",l[1]+x[1]])
     else
-      if x[0]=='lit' then x[1]=unprotect_dot(x[1]) end
+      if x[0]=='lit' then x[1]=unprotect_special(x[1]) end
       result.push(x) unless (x[0]=='lit' and x[1]=='')
     end
   }
@@ -271,13 +296,14 @@ def merge_dicts(d1,d2)
     redefined.each { |x|
       j1 = JSON.generate(d1[x])
       j2 = JSON.generate(d2[x])
-    }
-    if j1!=j2 then # kludge, JSON may not be canonicalized
-      $stderr.print "key redefined: #{x}\n"
-      $stderr.print j1,"\n"
-      $stderr.print j2,"\n"
-      fatal_error("The following keys were multiply defined: #{redefined.to_a.join(' ')}")
+      if j1!=j2 then # kludge, JSON may not be canonicalized
+        $stderr.print "key redefined: #{x}\n"
+        $stderr.print "was:           ",j1,"\n"
+        $stderr.print "redefined to:  ",j2,"\n"
+        # $stderr.print caller.join("\n"),"\n"; # stack trace, for debugging
+        fatal_error("The following keys were multiply defined: #{redefined.to_a.join(' ')}")
     end
+    }
   end
   return d1.merge(d2)
 end
@@ -317,7 +343,7 @@ def generate_code(dict,language)
         use base 'Exporter';
         our @EXPORT_OK = ('tint');
         {
-          my #{p} # evaluates to my $VAR1 = "...";, which is only evaluated the first time the function is called
+          my #{p} # evaluates to my $VAR1 = "...";, which is only evaluated when the module is first imported
           sub tint {
             my $key = shift;
             my %args = @_;
@@ -332,7 +358,7 @@ def generate_code(dict,language)
                 $result = $result . $x->[1];
               }
               else {
-                $result = $result . tint($x->[0],%args);
+                $result = $result . $args{$x->[1]};
               }
             }
             return $result;
@@ -347,6 +373,13 @@ def generate_code(dict,language)
     return result
   end
   fatal_error("Illegal language: #{language}")
+end
+
+def post_process!(dict)
+  strip_sigils!(dict)
+  dict.each { |k,v|
+    if k.split(/\./).last=~/^_/ then dict.delete(k) end
+  }
 end
 
 #========================================================================================================================
@@ -378,7 +411,7 @@ def main(opts_hash)
   }
 
   satisfy_refs(dict,base_dir)
-  strip_sigils!(dict)
+  post_process!(dict)
   print generate_code(dict,language)
 end
 

@@ -112,14 +112,6 @@ sub param_hash {
   return %params;
 }
 
-sub report_pars {
-  print "<p>Debugging output: list of GET method parameters:<br/>\n";
-  foreach my $par(keys(%params)) {
-    print "$par=".$params{$par}."<br/>\n";
-  }
-  print "</p>\n";
-}
-
 sub decode_pars {
 
         my $my_query_string = $ENV{'QUERY_STRING'};

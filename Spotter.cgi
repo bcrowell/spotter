@@ -34,6 +34,7 @@ use Email;
 use AnswerResponse;
 use SpotterText;
 use SpotterHTMLUtil;
+require "Util.pm";
 use Debugging;
 use Checker; # contains Options, Ans, Vbl, and Problem classes
 use Url;
@@ -164,7 +165,6 @@ sub my_password_checker {
        return 1;
 }
 
-
 our $basic_file_name = "spotter"; # default name of answer file
 if (Url::par_set("file")) {
   $basic_file_name = Url::par("file");
@@ -199,9 +199,9 @@ our $login = Login->new(
 unless ($login->logged_in()) {
   renice_myself(17)
 }
-               # Note that calls to nice() are cumulative.
-               # It's not necessarily a good idea to do this any earlier in the program, because if we're going to terminate for some other reason,
-               # it's better to get that done, and get the process off the system.
+  # Note that calls to nice() are cumulative.
+  # It's not necessarily a good idea to do this any earlier in the program, because if we're going to terminate for some other reason,
+  # it's better to get that done, and get the process off the system.
 
 #----------------------------------------------------------------
 # Contents of page.
@@ -279,8 +279,8 @@ unless ($login->logged_in()) {
 #----------------------------------------------------------------
 # Headers.
 #----------------------------------------------------------------
-SpotterHTMLUtil::PrintHTTPHeader($cookie_list);
-SpotterHTMLUtil::PrintHeaderHTML($spotter_js_dir);
+print SpotterHTMLUtil::HTTPHeader($cookie_list);
+print SpotterHTMLUtil::HeaderHTML($spotter_js_dir);
 
 #----------------------------------------------------------------
 # Cache a js version for use on the client side.
@@ -297,7 +297,6 @@ unless (-e $js_cache && modified($js_cache)>modified($xmlfile)) {
 # Top of page.
 #----------------------------------------------------------------
 
-#print "<h1>Spotter</h1>\n";
 print SpotterHTMLUtil::BannerHTML($tree);
 print SpotterHTMLUtil::asciimath_js_code();
 my $save_slurp_mode = $/;
@@ -307,7 +306,6 @@ print "<script>\n".<FILE>."\n</script>\n";
 close FILE;
 $/ = $save_slurp_mode;
 
-#Url::report_pars();
 SpotterHTMLUtil::debugging_output("The log file is ".Log_file::get_name());
 SpotterHTMLUtil::debugging_output("The xml file is ".$xmlfile);
 
@@ -615,6 +613,8 @@ if ($fatal_error) {
 
 print "<p>time: ".current_date_string()." CST</p>\n";
 
+print SpotterHTMLUtil::accumulated_debugging_output();
+
 print SpotterHTMLUtil::FooterHTML($tree);
 if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"done writing html output")}
 
@@ -696,16 +696,7 @@ sub do_edit_journal {
       $tree->write_journal($username,$journal,$text);
     }
   }
-  my $cooked_text = Journal::format_journal_as_html($text);
-  print tint('journal.instructions');
-  print "<h2>Last Saved Version</h2>".$cooked_text."<p/>\n";
-  print "<h2>Edit</h2>\n";
-  if ($is_locked) {
-    print "This is your final version, and it can no longer be edited.<p/>\n";
-  }
-  else {
-    print tint('journal.edit_text_form','url_link'=>Url::link(),'text'=>$text);
-  }
+  my $old = '';
   my $diffs_dir = $tree->diffs_directory();
   my $journal_diffs_dir = "$diffs_dir/$username/$journal";
   if (-e $diffs_dir) {
@@ -713,12 +704,18 @@ sub do_edit_journal {
     if (@diffs) {
       my $n = @diffs;
       $n--;
-      my $url = Url::link(REPLACE=>'what',REPLACE_WITH=>'viewold',DELETE=>'login',
-													REPLACE2=>'journal',REPLACE_WITH2=>$journal);
-      print tint('journal.old_versions_form','n'=>$n,'url'=>$url);
+      my $url = Url::link(REPLACE=>'what',REPLACE_WITH=>'viewold',DELETE=>'login',REPLACE2=>'journal',REPLACE_WITH2=>$journal);
+      $old = tint('journal.old_versions_form','n'=>$n,'url'=>$url);
     }
   }
+  print tint('journal.edit_page',
+    'cooked_text'=>Journal::format_journal_as_html($text),
+    'form'=>($is_locked ? tint('journal.is_locked') : tint('journal.edit_text_form','url_link'=>Url::link(),'text'=>$text) ),
+    'old'=>$old
+  );
 }
+
+
 
 sub do_view_old {
   my $journal = shift;
@@ -877,39 +874,20 @@ sub do_login_form {
     if ($step==3) { # enter password, and, if necessary, activate account
       print "<b>".$tree->get_real_name($username,"firstlast")."</b><br>\n";
       my $date = current_date_string();
-      print '<form method="POST" action="'.Url::link(REPLACE=>'login',REPLACE_WITH=>'set_cookie').'">';
-      print '  <input type="hidden" name="username" value="'.$username.'">';
-      print '  <input type="hidden" name="date" value="'.current_date_string().'">';
-      if ($state eq 'normal') {print ' Password:'} else {print ' Student ID:'} # initially, password is student ID
-      print '  <input type="password" name="password" size="20" maxlength="20"><br>';
-      if ($state ne 'normal') {
-        print '<p><i>To activate your account, you will need to choose a password, and enter it twice below to make sure ';
-        print "you haven't made a mistake in typing.</i><br>";
-        print '<table><tr><td>Password:</td><td><input type="password" name="newpassword1" size="20" maxlength="20"></td></tr>';
-        print '<tr><td>Type the same password again:</td>'
-                                          .'<td><input type="password" name="newpassword2" size="20" maxlength="20"></td></tr></table>';
-        print '<p><i>Please enter your e-mail address. This is optional, but you may miss important information about the class if ';
-        print "you don't give an address. E-mail is also required in order to reset a forgotten password. ";
-        print "Nobody outside of the class will know this address.</i><br>";
-        print '<input type="text" name="email" size="50" maxlength="50"><br>';
-        print '<input type="checkbox" name="emailpublic" checked value="public"> Leave this box checked if you want other students in ';
-        print 'the class to have access to this e-mail address.<br>';
-      }
-      print '  <input type="submit" value="Log in.">';
-      print "</form>\n";
-      print "If you're not ".$tree->get_real_name($username,"firstlast")
-        .', <a href="'.Url::link(DELETE=>'username').'">click here</a>.<p>';
-      print "You must have cookies enabled in your browser in order to log in.<p>\n";
+      print tint('user.password_form',
+        'url'=>Url::link(REPLACE=>'login',REPLACE_WITH=>'set_cookie'),
+        'username'=>$username
+      );
       if ($state eq 'normal') {
-        print "<p><i>Forgot your password?</i><br>\n";
-        print "If you've forgotten your password, enter your student ID number and click on this button. Information will be e-mailed to you about ";
-        print "how to set a new password.<br>\n";
-        print '<form method="POST" action="'.Url::link(DELETE=>'login',REPLACE=>'what',REPLACE_WITH=>'emailpassword',
-                                                                       DELETE=>'login').'">';
-        print '  Student ID: <input type="hidden" name="username" value="'.$username.'">';
-        print '  <input type="text" name="id" size="10"> ';
-        print '  <input type="submit" value="Send e-mail.">';
-        print "</form>\n";
+        print tint('user.forgot_password',
+          'url'=>Url::link(DELETE=>'login',REPLACE=>'what',REPLACE_WITH=>'emailpassword',DELETE=>'login'),
+          'username'=>$username,
+          'date'=>current_date_string(),
+          'prompt'=>($state eq 'normal' ? ' Password:' : ' Student ID:'), # initially, password is student ID
+          'activation'=>($state eq 'normal' ? tint('user.activate_account') : ''),
+          'real_name'=>$tree->get_real_name($username,"firstlast"),
+          'not_me_url'=>Url::link(DELETE=>'username')
+        )
       }
     }
   }
@@ -940,7 +918,6 @@ sub do_answer_check {
   my $tocs = $xml->{'toc'}; # ref to an array of all the top-level tocs in the file
   if (defined $tocs) {
     my $deepest = @hierarchy-1;
-    #print "<p>first dump of tocs: ".dumpify($tocs)."</p>"; 
     for (my $i=0; $i<=$deepest-2; $i++) {
       my $tag = 'toc';
       my $want_number = $params{$hierarchy[$i]};
@@ -956,10 +933,8 @@ sub do_answer_check {
   else {
     $tocs = $xml;
   }
-  #print "<p>dump of tocs: ".dumpify($tocs)."</p>"; 
   # find the problem
   my $problems = $tocs->{'problem'}; # ref to hash of problems
-  #print "<p>dump of stuff for hash of problems: ".dumpify($problems)."</p>"; 
   my $want_number = $params{'problem'};
   my $l = undef;
   return "expected hash ref, not found" unless ref($problems)=='HASH';
@@ -969,7 +944,6 @@ sub do_answer_check {
   return "problem number $want_number not found" if ! defined $l;
   # we're down to the 'problem' level, so now find the 'find'
   my %stuff = (); # a hash of arrays; e.g., {unit_list=>'m/s',var=>[{'sym'=>'x','units'=>'m'},{'sym'=>'t','units'=>'s'}],content=>'the speed',ans=>[{e=>'x/t'}]
-  #print "<p>dump of problems->{l}: ".dumpify($problems->{$l})."</p>"; 
   my $type = 'expression';
   $type = $problems->{$l}->{'type'} if exists $problems->{$l}->{'type'};
   my $success = get_problem_from_tree($problems->{$l},$params{'find'},\%stuff);
@@ -983,19 +957,15 @@ sub do_answer_check {
   my $var_list = $stuff{'var'};
   if (! defined $var_list) {$var_list = []}
   my $ans_list = $stuff{'ans'};
-  #print "<p>dump of stuff for problem: ".dumpify(\%stuff)."</p>";
-  #print "<p>unit_list=$unit_list,content=$content,</p>";
 
   my $p = Problem->new();
   $p->type($type);
   $p->description($content);
-  #print "<p>dump of var_list: ".dumpify($var_list)."</p>"; 
   foreach my $var(@$var_list) {
     my $v = Vbl->new($var->{'sym'});
     $v->units($var->{'units'}) if exists $var->{'units'};
     $p->add_vbl($v);
   }
-  #print "<p>dump of ans_list: ".dumpify($ans_list)."</p>"; 
   foreach my $ans(@$ans_list) {
     foreach my $thing('filter','tol_type','tol','sig_figs') {
       $ans->{$thing} = {'filter'=>'~','tol_type'=>'mult','tol'=>.00001,'sig_figs'=>undef}->{$thing} unless exists $ans->{$thing};
@@ -1004,7 +974,6 @@ sub do_answer_check {
     $a->response($ans->{'content'}) if exists $ans->{'content'};
     $p->add_ans($a);
   }
-  #print "<p>dump of unit_list: ".dumpify($unit_list)."</p>"; 
   if (@$unit_list>0) {
     $p->options_stack_top()->unit_list($unit_list->[-1]);
   }
@@ -1051,9 +1020,6 @@ sub get_problem_from_tree {
     my $depth = @$stuff;
 
     my $debug = sub { };
-    if (0) {
-      my $debug = sub { my $x=shift; print "<p>".(' - 'x$depth)."$x</p>" };
-    }
 
     &$debug("in descend, depth=$depth");
 
@@ -1143,7 +1109,6 @@ sub get_general_info_from_xml {
 
   my $el_nums = $xml->{'num'}; # hash ref
 
-  # print "<p>dump of el_nums: ".dumpify($el_nums)."</p>";
   # Normally, el_nums looks like this:
   #   { 'swimbladder' => { 'label' => '2' }, 'copter' => { 'label' => '4' }}
   # but because XML::Simple is psychotic, it can look like this if there's only one problem in the file:
@@ -1169,7 +1134,6 @@ sub get_general_info_from_xml {
 sub generate_js_for_data_element {
       my $list = shift; # array ref
       my $output = '';
-      #print "<p>dump of data list: ".dumpify($list)."</p>"; 
       $list = [$list] if ref($list) ne 'ARRAY';
       foreach my $data(@$list) {
         my $content = SpotterHTMLUtil::super_and_sub($data->{'content'});
@@ -1850,11 +1814,4 @@ sub append_xml_char_data {
   $new =~ s/[\n\r\t]/ /;
   return $new if $already eq '';
   return "$already $new";
-}
-
-sub single_quotify {
-  my $s = shift;
-  $s  =~ s/'/\\'/g;
-  $s  =~ s/\n/ /g;
-  return "'$s'";
 }

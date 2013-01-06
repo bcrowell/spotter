@@ -1,0 +1,38 @@
+forgot_password = <<__html__
+<p><i>Forgot your password?</i><br>
+If you've forgotten your password, enter your student ID number and click on this button. Information will be e-mailed to you about 
+how to set a new password.<br>
+<form method="POST" action="$url">
+  Student ID: <input type="hidden" name="username" value="$username">';
+  <input type="text" name="id" size="10"> ';
+  <input type="submit" value="Send e-mail.">';
+</form>
+__html__
+
+password_form = <<__html__
+<form method="POST" action="$url">
+  <input type="hidden" name="username" value="$username">
+  <input type="hidden" name="date" value="$date">
+  $prompt
+    <input type="password" name="password" size="20" maxlength="20"><br>
+  $activation
+  <input type="submit" value="Log in.">
+</form>
+If you're not $real_name, <a href="$not_me_url">click here</a>.<p>
+You must have cookies enabled in your browser in order to log in.<p>
+__html__
+
+==== The following is an optional part of a larger login form.
+activate_account = <<__html__
+<p><i>To activate your account, you will need to choose a password, and enter it twice below to make sure
+you haven't made a mistake in typing.</i><br>
+<table><tr><td>Password:</td><td><input type="password" name="newpassword1" size="20" maxlength="20"></td></tr>
+<tr><td>Type the same password again:</td>
+<td><input type="password" name="newpassword2" size="20" maxlength="20"></td></tr></table>
+<p><i>Please enter your e-mail address. This is optional, but you may miss important information about the class if 
+you don't give an address. E-mail is also required in order to reset a forgotten password. 
+Nobody outside of the class will know this address.</i><br>
+<input type="text" name="email" size="50" maxlength="50"><br>
+<input type="checkbox" name="emailpublic" checked value="public"> Leave this box checked if you want other students in 
+the class to have access to this e-mail address.<br>
+__html__
