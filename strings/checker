@@ -1,0 +1,40 @@
+explain_answer_list=<<__explain__
+<p>The following is a list of the correct answers that have been recorded for you. If a correct answer
+is missing from this list, it may be because you weren't logged in when you entered the answer. Even if
+your correct answers shows up here, that doesn't necessarily mean it was on time. Note that all the times shown below
+are for the time zone of the server (PST for lightandmatter.com). If you got some parts of a problem
+right but not others, only the ones you got right are listed here.</p>
+__explain__
+
+explain_email_privacy=<<__explain__
+<p><b>E-mail addresses</b></p>
+<p>Important privacy information: People's e-mail addresses only appear here if they want them to be available to
+other people in the class; this can be controlled from the account settings page. Please do not give these e-mail
+addresses to anyone outside the class.</p>
+__explain__
+
+your_account_form=<<__form__
+<p><b>Your Account</b><p>
+<form method="POST" action="$url">';
+<p>E-mail address:<br>
+<input type="text" name="email" size="50" maxlength="50" value="$email"><br>
+<input type="checkbox" name="emailpublic" $emailpublic value="public"> 
+   Check this box if you want other students in
+   the class to have access to this e-mail address.<br>
+<p>If you want to change your password, enter the new one twice below. If you don't want to change your password, don't
+type in these boxes.<br>
+<table><tr><td>New password:</td><td><input type="password" name="newpassword1" size="20" maxlength="20"></td></tr>
+<tr><td>New password again:</td>
+<td><input type="password" name="newpassword2" size="20" maxlength="20"></td></tr></table>
+<p><i>The current settings on your account are given above. To change them, edit the form and then enter
+your password at the bottom of the form and press the Change Settings button.</i>
+<p>Password:  <input type="password" name="password" size="20" maxlength="20">
+(If you're not changing your password, enter your old one here.)<br>
+  <input type="submit" value="Change Settings">
+</form>
+__form__
+
+explain_mathml=<<__explain__
+<p>As you type, Spotter's interpretation of your input will show up here: <span id="out"></span> <br/>
+(This feature requires Firefox, or Internet Explorer 6 with <a href="http://www.dessci.com/en/products/mathplayer/welcome.asp">MathPlayer</a>.)</p>
+__explain__

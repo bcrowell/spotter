@@ -35,6 +35,7 @@ use AnswerResponse;
 use SpotterText;
 use SpotterHTMLUtil;
 use Debugging;
+use Tint 'tint';
 
 use Math::Complex;
 use Math::Trig;
@@ -693,25 +694,14 @@ sub do_edit_journal {
     }
   }
   my $cooked_text = Journal::format_journal_as_html($text);
-  print "<p/>If you scroll down, first you'll see your current version of your text with all the formatting, and then below that you'll ";
-  print "see a window in which you can edit your text. To make a paragraph break, put in a blank line between the paragraphs. ";
-  print "To make a section heading, put the heading on a line by itself, with an equals sign, =, at the beginning of the line. ";
-  print "Subsection headings are made with a ==, and subsubsections with a ===. ";
-  print "To make a table of data, put a * at the beginning of each line.<p/>\n";
-  print "Your changes will not be saved until you click on the Save button! To avoid losing changes by mistake, you should make ";
-  print "a habit of saving your text very often as you work on it.<p/>\n";
+  print tint('journal.instructions');
   print "<h2>Last Saved Version</h2>".$cooked_text."<p/>\n";
   print "<h2>Edit</h2>\n";
   if ($is_locked) {
     print "This is your final version, and it can no longer be edited.<p/>\n";
   }
   else {
-    print '<form method="POST" action="'.Url::link().'">'."\n";
-    print '<textarea name="journalText" rows="30" cols="85">';
-    print $text;
-    print "</textarea><br/>\n";
-    print '<input type="submit" name="submitJournalButton" value="Save">'."\n";
-    print "</form>\n";
+    print tint('journal.edit_text_form','url_link'=>Url::link(),'text'=>$text);
   }
   my $diffs_dir = $tree->diffs_directory();
   my $journal_diffs_dir = "$diffs_dir/$username/$journal";
@@ -722,12 +712,7 @@ sub do_edit_journal {
       $n--;
       my $url = Url::link(REPLACE=>'what',REPLACE_WITH=>'viewold',DELETE=>'login',
 													REPLACE2=>'journal',REPLACE_WITH2=>$journal);
-      print "<h3>Old Versions</h3>\nYou have $n old versions you can go back and look at. To view one, enter a number from 1 to $n\n<br/>\n";
-      print '<form method="POST" action="'.$url.'">'."\n";
-      print '<input type="text" name="version">'."\n";
-      print '<input type="submit" name="oldJournalButton" value="View">'."\n";
-      print "</form>\n";
-      print "<p><b>If you have edited your text, make sure to save it before doing this!</b></p>\n";
+      print tint('journal.old_versions_form','n'=>$n,'url'=>$url);
     }
   }
 }
@@ -759,11 +744,7 @@ sub do_answers {
   my ($err,$answers) = WorkFile::list_all_correct_answers_for_one_student($tree,$login->username());
   if ($err eq '') {
     my @answers = @$answers;
-    print "<p>The following is a list of the correct answers that have been recorded for you. If a correct answer ";
-    print "is missing from this list, it may be because you weren't logged in when you entered the answer. Even if ";
-    print "your correct answers shows up here, that doesn't necessarily mean it was on time. Note that all the times shown below ";
-    print "are for the time zone of the server (PST for lightandmatter.com). If you got some parts of a problem ";
-    print "right but not others, only the ones you got right are listed here.</p>\n";
+    print tint('checker.explain_answer_list');
     foreach my $answer(@answers) {
       print "$answer<br/>\n";
     }
@@ -802,10 +783,7 @@ sub do_email {
       }
 
       my @roster = $tree->get_roster();
-      print "<p><b>E-mail addresses</b><p>\n";
-      print "Important privacy information: People's e-mail addresses only appear here if they want them to be available to ";
-      print "other people in the class; this can be controlled from the account settings page. Please do not give these e-mail ";
-      print "addresses to anyone outside the class.<p>\n";
+      print tint('checker.explain_email_privacy');
       print "<table>\n";
       my $instructor_emails = $tree->instructor_emails();
       my @instructors = keys %$instructor_emails;
@@ -857,31 +835,10 @@ sub link_to_send_email {
 }
 
 sub do_account {
-      print "<p><b>Your Account</b><p>\n";
-      print '<form method="POST" action="'.Url::link(REPLACE=>'login',REPLACE_WITH=>'set_cookie',
-                                                     REPLACE2=>'what',REPLACE_WITH2=>'check').'">';
-
-      my $email = $tree->get_student_par($login->username(),'email');
-      my $emailpublic = $tree->get_student_par($login->username(),'emailpublic');
-      print "<p>E-mail address:<br>";
-      print '<input type="text" name="email" size="50" maxlength="50" value="'.$email.'"><br>';
-      print '<input type="checkbox" name="emailpublic" ';
-      if ($emailpublic) {print 'checked'}
-      print ' value="public"> Check this box if you want other students in ';
-      print 'the class to have access to this e-mail address.<br>';
-
-      print "<p>If you want to change your password, enter the new one twice below. If you don't want to change your password, don't ";
-      print "type in these boxes.<br>";
-      print '<table><tr><td>New password:</td><td><input type="password" name="newpassword1" size="20" maxlength="20"></td></tr>';
-      print '<tr><td>New password again:</td>'
-                                        .'<td><input type="password" name="newpassword2" size="20" maxlength="20"></td></tr></table>';
-
-      print '<p><i>The current settings on your account are given above. To change them, edit the form and then enter ';
-      print "your password at the bottom of the form and press the Change Settings button.</i>\n";
-      print '<p>Password:  <input type="password" name="password" size="20" maxlength="20">';
-      print "(If you're not changing your password, enter your old one here.)<br>";
-      print '  <input type="submit" value="Change Settings">';
-      print "</form>\n";
+  my $email = $tree->get_student_par($login->username(),'email');
+  my $emailpublic = $tree->get_student_par($login->username(),'emailpublic');
+  my $url = Url::link(REPLACE=>'login',REPLACE_WITH=>'set_cookie',REPLACE2=>'what',REPLACE_WITH2=>'check');
+  print tint('checker.your_account_form','url'=>$url,'email'=>$email,'emailpublic'=>($emailpublic ? 'checked' : ''));
 }
 
 sub do_login_form {
@@ -1383,10 +1340,7 @@ JS
         $return = $return .  "</p>\n";
         $return = $return .  "\n".$SpotterHTMLUtil::cgi->endform."\n";
         if ($is_symbolic) {
-          $return = $return .  <<ASCIIMATH;
-<p>As you type, Spotter's interpretation of your input will show up here: <span id=\"out\"></span> <br/>
-(This feature requires Firefox, or Internet Explorer 6 with <a href="http://www.dessci.com/en/products/mathplayer/welcome.asp">MathPlayer</a>.)</p>
-ASCIIMATH
+          $return = $return .  tint('checker.explain_mathml');
         }
 
         my $recording_feedback = 'none';

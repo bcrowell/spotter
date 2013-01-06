@@ -1,0 +1,27 @@
+instructions=<<__instr__
+<p>If you scroll down, first you'll see your current version of your text with all the formatting, and then below that you'll 
+see a window in which you can edit your text. To make a paragraph break, put in a blank line between the paragraphs. 
+To make a section heading, put the heading on a line by itself, with an equals sign, =, at the beginning of the line. 
+Subsection headings are made with a ==, and subsubsections with a ===. 
+To make a table of data, put a * at the beginning of each line.</p>
+<p>Your changes will not be saved until you click on the Save button! To avoid losing changes by mistake, you should make 
+a habit of saving your text very often as you work on it.</p>
+__instr__
+
+edit_text_form=<<__form__
+<form method="POST" action="$url_link">
+<textarea name="journalText" rows="30" cols="85">
+$text
+</textarea><br/>
+<input type="submit" name="submitJournalButton" value="Save">'
+</form>\n
+__form__
+
+old_versions_form=<<__form__
+<h3>Old Versions</h3>\nYou have $n old versions you can go back and look at. To view one, enter a number from 1 to $n\n<br/>
+<form method="POST" action="$url">
+<input type="text" name="version">
+<input type="submit" name="oldJournalButton" value="View">'
+</form>
+<p><b>If you have edited your text, make sure to save it before doing this!</b></p>
+__form__
