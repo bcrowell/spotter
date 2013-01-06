@@ -338,6 +338,7 @@ def generate_code(dict,language)
             return $result;
           }
         }
+        1;
       PERL
       return perl
     ensure
