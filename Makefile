@@ -9,24 +9,32 @@ ANSWERS = $(CGI)/answers
 DATA = $(CGI)/data
 JS = $(WEB_SERVER_DATA)/spotter_js/$(VERSION)
 
+NEW_TINT = /home/bcrowell/Documents/programming/tint/tint
+   # ... on my own system, this is the newest version; always update to this version
+
 doc:
 	pdflatex doc
 	pdflatex doc
 
-install:
+Tint.pm: strings/* tint
+	perl -e 'if (-e "$(NEW_TINT)") {system("cp $(NEW_TINT) .")}'
+	chmod +x tint
+	./tint --generate="perl" strings/* >Tint.pm
+
+install: Tint.pm
+	perl -e 'if (-e "$(NEW_TINT)") {system("cp $(NEW_TINT) .")}'
 	install -d $(JS)
 	install -d $(CGI)
 	install -d $(ANSWERS)
 	install --mode=775 -d $(DATA)
 	chgrp $(WEB_SERVER_GROUP) $(DATA)
-	install *.cgi $(CGI)
-	install *.pm $(CGI)
+	install *.cgi *.pm config.json $(CGI)
 	install --mode=644 sample.xml $(ANSWERS)
 	install *.js $(JS)	
 
 depend:
 	# The following is for debian, ubuntu, etc.:
-	apt-get install libxml-parser-perl libxml-simple-perl libdigest-sha-perl libjson-perl
+	apt-get install libxml-parser-perl libxml-simple-perl libdigest-sha-perl libjson-perl libmail-sendmail-perl
 
 clean:
 	rm -f doc.log

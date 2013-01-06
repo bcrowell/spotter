@@ -28,6 +28,7 @@ use Debugging;
 
 use Math::Complex;
 use Math::Trig;
+use Tint 'tint';
 
 use utf8;
 
@@ -148,17 +149,7 @@ sub answer_response {
                 }
                 else {
                   my $ns = Parse::count_sig_figs($raw_input);
-                  $result = $result .  
-                   "<p>The numerical part of your answer, $raw_input, has either too many or too few significant figures. "
-.<<SIG_FIG_LECTURE;
-As a rule of thumb, the precision of the result of a calculation is limited by the precision of the least accurate piece of data used to calculate it.
-A common mistake is to believe in the fallacy of false precision suggested by your calculator's willingness to display a result with many digits.
-when you communicate such a result to someone else, you are misleading them (and possibly also deluding yourself).
-The precision of a result can also be limited by all the simplifying assumptions that went into translating a real-world situation into
-equations; for example, even if I know that a rock is being dropped from a height of 1.000000 m in a gravitational field of 9.82237 m/s<sup>2</sup>,
-I can't calculate the time it takes to hit the ground to 6 sig figs, because at that level of precision, air resistance would be an important factor.
-SIG_FIG_LECTURE
-                   ;
+                  $result = $result .  "<p>".tint("responses.sig_fig_lecture",'raw_input'=>$raw_input)."</p>";
                 }
                 $result = $result . "</p>";
               }
@@ -171,9 +162,7 @@ SIG_FIG_LECTURE
             $fallback_result =   "<p>$msg</p>\n";
           }
           if ($match eq "un" && $c) {
-            $fallback_result =    "<p>Your answer has the wrong units, so either you made a mistake in your algebra or you entered your answer incorrectly.".
-                                  " A typical mistake would be to enter a+b/c+d when you really meant (a+b)/(c+d)".
-                                  " Scroll down for more information on how to enter answers into Spotter.</p>\n";
+            $fallback_result =    "<p>".tint("responses.units_lecture")."</p>\n";
           }
           if ($match eq "in" && $c) {
             $fallback_result =    "?"; # internal error

@@ -1,0 +1,386 @@
+#!/usr/bin/ruby
+
+=begin rdoc
+
+Tint - a simple method for templating and internationalization
+
+(c) 2013 Benjamin Crowell, GPL3 licensed
+
+usage:
+  tint --generate="<language>" file ...
+By default the computer language for the generated code is JSON (which is
+also valid javascript). The resulting generated code is  written to stdout.
+Files that are directories are silently ignored.
+
+=end
+
+
+require 'getoptlong'  # pickaxe book, p. 452
+require 'set' # http://www.ruby-doc.org/stdlib-1.9.3/libdoc/set/rdoc/Set.html
+require 'fileutils'
+require 'tempfile' 
+require 'json'
+
+$key_pat = "(?:\\w+\\.)*\\w+" # matches, e.g., foo.bar.baz or --.bar (meaning two directories up, i.e., ../../bar)
+$unescaped_dollar_pat = '(?<!\\\\)\\$' # requires ruby 1.9
+$ref_pat = '((?:'+$unescaped_dollar_pat+'){1,2})('+$key_pat+')'
+
+#--------- process command-line arguments
+
+def fatal_error(message)
+  $stderr.print "error in tint: #{message}\n"
+  exit(-1)
+end
+
+opts = GetoptLong.new(
+  [ "--generate",    GetoptLong::REQUIRED_ARGUMENT ],
+  [ "--compressed",  GetoptLong::NO_ARGUMENT ], # don't try to make output pretty -- not yet implemented
+)
+
+opts_hash = Hash.new
+opts.each do |opt,arg|
+  opts_hash[opt] = arg # for boolean options, arg is "" if option was set
+end
+
+#----------
+# Process either a file or the text it contains. If the text contains references
+# to other dictionary entries, we don't immediately go and fill them in. We only
+# later iteratively try to satisfy those references.
+# Returns a boolean saying whether it did anything.
+#----------
+
+def process_node!(
+    dict,        # the dictionary built so far; will be modified
+    node,        # e.g., "foo.bar" if the file we're processing is "bar"
+    dir,         # the directory we're currently in
+    node_type,   # "file" or "text"
+    node_val    # either filename or the text
+  )
+  orig_keys = dict.keys.sort
+  if node_type=='file' then
+    filename = node_val
+    text = nil
+    begin
+      File.open(filename,'r') { |f|
+        text = f.gets(nil) # nil means read whole file
+      }
+    rescue
+      fatal_error("Error opening file #{filename} for input: #{$!}.")
+    end
+    handle_text!(dict,node,dir,text)
+  end # if file
+  if node_type=='text' then
+    text = node_val
+    handle_text!(dict,node,dir,text)
+  end # if text
+  return (dict.keys.sort!=orig_keys)
+end
+
+# helper routine for process_node!(); modifies dict
+def handle_text!(dict,node,dir,text)
+  #$stderr.print "handle_text!(#{text})\n"
+  return if text=~/\A\s*\Z/
+  if !(text=~/<</) then
+    # The whole file defines a single entry.
+    merge_text_node!(dict,node,protect_dot(text))
+  else 
+    # more than one entry in file:
+    handled = false
+    if text=~/\A\s*(#{$key_pat})\s*=\s*<<([^\n]*)>>\s*([\s\S]*)/s then
+      handled = true
+      (k,v,rest) = [$1,$2,$3]
+      v.gsub!(/(?<!\\)\\n/,"\n") # allow, e.g., foo=<<bar \n baz>>
+      v = protect_dot(v)
+      merge_text_node!(dict,node+'.'+k,v)
+      process_node!(dict,node,dir,'text',rest)
+    end
+    if !handled && text=~/\A\s*(#{$key_pat})\s*=\s*<<([^\n]*)\n([\s\S]*)/s then
+                # [\s\S] means anything that is whitespace or isn't whitespace, i.e., any character.
+                # I don't understand why the /s doesn't allow me to do this with ., but it doesn't work.
+      # a here doc
+      handled = true
+      (k,terminator,rest) = [$1,$2,$3]
+      x = rest.split(/(?<=\n)#{Regexp::quote(terminator)}/)
+      merge_text_node!(dict,node+'.'+k,protect_dot(x.shift))
+      process_node!(dict,node,dir,'text',x.join(terminator))
+    end
+    fatal_error("file with << not handled, text=#{text}=") if !handled
+  end
+end
+
+def protect_dot(s)
+  return s.gsub(/(?<!\\)\\./,"@@@protect_dot@@@") # so we can have, e.g., <<Hello, $name\.>>; this works because
+                                                  # @ isn't a legal character in variable names
+end
+
+def unprotect_dot(s)
+  return s.gsub(/@@@protect_dot@@@/,".")
+end
+
+def merge_text_node!(dict,node,text)
+  args = []
+  text.scan(/#{$ref_pat}/) { |sigil,x|
+    args.push(x)
+  }
+  dict.replace(merge_dicts(dict,{node=>{
+    'text'=>chop_up_string(text),
+    'args'=>args
+  }}))
+end
+
+# make a string like "hello, $name" into [["lit","hello, "],["ref","$name"]]
+def chop_up_string(s)
+  result = []
+  chop_up_string_messy(s).each { |x|
+    if x=~/#{$ref_pat}/ then
+      result.push(["ref",x])
+    else
+      result.push(["lit",x])
+    end
+  }
+  return clean_up_text!(result)
+end
+
+# make a string like "hello, $name" into ["hello, ","$name"]
+# This is not meant to be called externally, only used by chop_up_string().
+def chop_up_string_messy(s)
+  if s=~/(.*)(#{$ref_pat})(.*)/ then
+    (a,b,c) = [$1,$2,$5] # ... $3 and $4 are internal to $ref_pat, and we don't need them here
+    # If a or c is a null string, it gets cleaned up later by chop_up_string().
+    return [chop_up_string_messy(a),b,chop_up_string_messy(c)].flatten
+  else
+    return [s]
+  end
+end
+
+# Iteratively attempt to satisfy all refs. Any refs that aren't satisfied remain as arguments.
+# Currently, I don't think my syntax makes it possible for this to be circular, but we do bail out
+# if there are too many iterations.
+def satisfy_refs(dict,base_dir)
+  found_any = nil
+  iterations = 0
+  begin
+    found_any = false
+    dict.clone.each { |key,value| # have to clone it because otherwise ruby won't let us add keys during iteration
+      args = value['args']
+      if args.length>0 then
+        args.each { |a|
+          # $stderr.print "popping off key=#{key},a=#{a}\n"
+          q = pop_ref(key) + '.' + a # fully qualified, e.g., if $foo occurs in top-level file bar, then q is bar.foo
+          q.sub!(/^\./,'') # eliminate leading dot; is this right?; happens when file contains only one symbol
+          if dict.has_key?(q) then
+            # $stderr.print "found q=#{q}\n"
+            interpolate_in_text!(dict[key],a,dict[q])
+            found_any = true
+          else
+            # If q="foo.bar.baz", look for a file called foo or foo/bar.
+            # Should probably throw an error if ref is defined by both preexisting key and file?
+            qq = q.split(/\./) # ['foo','bar','baz']
+            l = qq.length
+            0.upto(l-1) { |n_dir| # how many pieces on the front are directories
+              if n_dir>0 then d = File.join(base_dir,File.join(qq[0..n_dir-1])) else d=base_dir end
+              f = qq[n_dir]
+              # $stderr.print "looking for q=#{q}, base_dir=#{base_dir}, d=#{d}, f=#{f}, n_dir=#{n_dir}\n"
+              if n_dir>0 && (!File.exist?(d) or File.ftype(d)!="directory") then break end
+              path=File.join(d,f)
+              # $stderr.print "path=#{path}=\n"
+              if !File.exist?(path) then break end
+              if File.ftype(path)=="directory" then next end
+              # If we get to here, we know f exists and is a file, not a directory.
+              node = qq[0..n_dir].join('.')
+              # $stderr.print "going to process_node! with node=#{node},path=#{path}\n"
+              # $stderr.print "before, ",JSON.generate(dict),"\n"
+              did_anything = process_node!(dict,node,d,'file',path)
+              # $stderr.print "after,  ",JSON.generate(dict),"\n\n"
+              found_any = did_anything
+            }
+          end
+        }
+      end
+    }
+    iterations = iterations+1
+    fatal_error("Too many iterations, probably a circular reference") if iterations>1000
+  end while found_any
+end
+
+# Take, e.g., a function defined by
+#   {'text'=>[["lit","Hello, "],["ref","$name"]],'args'=>['$name']}
+# and do partial application to fix $name so it's no longer an argument.
+# Both text and value are functions, not bare strings or arrays.
+# There is no recursion; we just do one level of partial application.
+def interpolate_in_text!(text,ref,value)
+  # $stderr.print "interpolating text=#{text},ref=#{ref},value=#{value}\n"
+  result = {'text'=>[],'args'=>text['args'].clone}
+  result['args'].delete(ref)
+  text['text'].each {|x|
+    # $stderr.print "x[0]=#{x[0]}, x[1]=#{x[1]}, ref=#{ref}\n" if x[0]=="ref"
+    if x[0]=="ref" and x[1]=~/\${1,2}#{Regexp::quote(ref)}/ then # bug, doesn't handle $ and $$ properly
+      # $stderr.print "matched ref=#{ref}\n"
+      result['text'] = result['text']+value["text"]
+    else
+      result['text'].push(x)
+    end
+  }
+  Set.new(result['args'])
+  Set.new(value['args'])
+  result['args'] = Set.new(result['args']).union(Set.new(value['args'])).to_a
+  text.replace(result)
+  clean_up_text!(text['text'])
+end
+
+# Take, e.g., [["lit","Hello, "],["lit","Fred"]] and return [["lit","Hello, Fred"]].
+# Also, get rid of null strings and 
+def clean_up_text!(text)
+  result = []
+  text.each { |x|
+    if x[0]=="lit" and result.length>0 and result.last[0]=="lit" then
+      l = result.pop
+      # $stderr.print "in clean_up_text, ",JSON.generate(text)," ... ",JSON.generate(l),"\n"
+      result.push(["lit",l[1]+x[1]])
+    else
+      if x[0]=='lit' then x[1]=unprotect_dot(x[1]) end
+      result.push(x) unless (x[0]=='lit' and x[1]=='')
+    end
+  }
+  text.replace(result)
+end
+
+def strip_sigils!(dict)
+  dict.each { |k,v|
+    v['text'].each { |x|
+      if x[0]=="ref" then
+        x[1].gsub!(/^\$+/,'')
+      end
+    }
+  }
+end
+
+# take, e.g., "a.b.c" and return "a.b"
+def pop_ref(ref)
+  if ref=~/\./ then
+    return ref.sub(/\.[^.]*/,'')
+  else
+    return ''
+  end
+end
+
+def merge_dicts(d1,d2)
+  redefined = d1.keys.to_set.intersection(d2.keys.to_set)
+  unless redefined.empty? then
+    (j1,j2) = [nil,nil]
+    redefined.each { |x|
+      j1 = JSON.generate(d1[x])
+      j2 = JSON.generate(d2[x])
+    }
+    if j1!=j2 then # kludge, JSON may not be canonicalized
+      $stderr.print "key redefined: #{x}\n"
+      $stderr.print j1,"\n"
+      $stderr.print j2,"\n"
+      fatal_error("The following keys were multiply defined: #{redefined.to_a.join(' ')}")
+    end
+  end
+  return d1.merge(d2)
+end
+
+#========================================================================================================================
+#---------- generate_code
+#========================================================================================================================
+
+def generate_code(dict,language)
+  if language=='json' then
+    return JSON.pretty_generate(dict)+"\n" 
+  end
+  if language=='perl' then
+    f = Tempfile.new('tint')
+    result = nil
+    begin
+      f.print JSON.generate(dict)
+      f.close
+      # Because the following is stripped of newlines and executed as one line of perl, it can't contain comments.
+      perl = <<-"PERL"
+        use Data::Dumper;
+        use JSON;
+        local $/;
+        open(F,"<#{f.path()}") or die;
+        $x = <F>;
+        close F;
+        print Dumper(from_json($x));
+      PERL
+      perl = perl.gsub(/\n\s*/,' ')
+      c = "perl -e '#{perl}'"
+      # $stderr.print c,"\n"
+      p = %x{#{c}} # bug: how do you check for errors?
+      perl = <<-"PERL"
+        # This is machine-generated code made by tint, https://github.com/bcrowell/tint .
+        use strict;
+        package Tint;
+        use base 'Exporter';
+        our @EXPORT_OK = ('tint');
+        {
+          my #{p} # evaluates to my $VAR1 = "...";, which is only evaluated the first time the function is called
+          sub tint {
+            my $key = shift;
+            my %args = @_;
+            my $dict = $VAR1;
+            my $t = $dict->{$key};
+            if (!defined $t) {return $t}
+            my $tt = $t->{'text'};
+            my $result = '';
+            foreach my $x(@$tt) {
+              my $type = $x->[0];
+              if ($type eq 'lit') {
+                $result = $result . $x->[1];
+              }
+              else {
+                $result = $result . tint($x->[0],%args);
+              }
+            }
+            return $result;
+          }
+        }
+      PERL
+      return perl
+    ensure
+      f.unlink
+    end
+    return result
+  end
+  fatal_error("Illegal language: #{language}")
+end
+
+#========================================================================================================================
+#---------- main
+#========================================================================================================================
+
+def main(opts_hash)
+  language = opts_hash['--generate']
+  if language.nil? then language='json' end
+
+  files = []
+
+  ARGV.each { |f|
+    fatal_error("File #{f} doesn't exist.") unless File.exist?(f)
+    files.push(f) unless (File.stat(f).directory? or f=~/~$/)
+  }
+  files.length>0 or fatal_error("No files specified (or all files were directories).")
+
+  base_dir = File.dirname(files[0])
+
+  dict = {}
+  files.each {|f| 
+    if base_dir!=File.dirname(f) then fatal_error("file #{f}: all files referenced directly on the command line must be in the same directory") end
+    node = File.basename(f)
+    node.gsub!(/\..*/,'') # remove any extension such as .tint, since we don't allow dots in names
+    dict2 = {}
+    process_node!(dict2,node,base_dir,'file',f)
+    dict = merge_dicts(dict,dict2)
+  }
+
+  satisfy_refs(dict,base_dir)
+  strip_sigils!(dict)
+  print generate_code(dict,language)
+end
+
+#----------
+
+main(opts_hash)
