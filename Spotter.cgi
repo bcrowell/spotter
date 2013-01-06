@@ -153,6 +153,7 @@ else { # not the same as last ip
 # Initialization
 #----------------------------------------------------------------
 $SpotterHTMLUtil::cgi = new CGI;
+my $out = ''; # accumulate all the html code to be printed out
 Url::decode_pars();
 
 my $tree = FileTree->new(DATA_DIR=>"${data_dir}/",CLASS=>Url::par("class"));
@@ -281,8 +282,8 @@ unless ($login->logged_in()) {
 #----------------------------------------------------------------
 # Headers.
 #----------------------------------------------------------------
-print SpotterHTMLUtil::HTTPHeader($cookie_list);
-print SpotterHTMLUtil::HeaderHTML($spotter_js_dir);
+$out = $out .  SpotterHTMLUtil::HTTPHeader($cookie_list);
+$out = $out .  SpotterHTMLUtil::HeaderHTML($spotter_js_dir);
 
 #----------------------------------------------------------------
 # Cache a js version for use on the client side.
@@ -293,18 +294,19 @@ my $js_cache = "$cache_dir/${basic_file_name}_js_cache.js";
 my $cache_parsed_xml = "$cache_dir/${basic_file_name}_parsed_xml.dump";
 #--- Write stuff to cache files, if cache files don't exist or are out of date:
 unless (-e $js_cache && modified($js_cache)>modified($xmlfile)) {
-  jsify($xmlfile,$js_cache);
+  my $return_status = jsify($xmlfile,$js_cache);
+  if ($return_status->[0]>=2) {$out = $out .  "<p>".$return_status->[1]."</p>"}
 }
 #----------------------------------------------------------------
 # Top of page.
 #----------------------------------------------------------------
 
-print SpotterHTMLUtil::BannerHTML($tree);
-print SpotterHTMLUtil::asciimath_js_code();
+$out = $out .  SpotterHTMLUtil::BannerHTML($tree);
+$out = $out .  SpotterHTMLUtil::asciimath_js_code();
 my $save_slurp_mode = $/;
 local $/;
 open(FILE,"<$js_cache");
-print "<script>\n".<FILE>."\n</script>\n";
+$out = $out .  "<script>\n".<FILE>."\n</script>\n";
 close FILE;
 $/ = $save_slurp_mode;
 
@@ -329,7 +331,7 @@ if (! -e $js_cache) {
 # Body.
 #----------------------------------------------------------------
 
-  if ($tree->class_description()) {print $tree->class_description()."<br>\n"}
+  if ($tree->class_description()) {$out = $out .  $tree->class_description()."<br>\n"}
 
   my $journals = $tree->journals();
   my $have_journals = defined $journals;
@@ -356,7 +358,7 @@ if (! -e $js_cache) {
     foreach my $key(@message_keys) {
       my $msg = BulletinBoard::get_message($tree,$login->username(),$key);
       if ($msg->[0] eq '') {
-        print BulletinBoard::html_format_message($msg);
+        $out = $out .  BulletinBoard::html_format_message($msg);
         my $date = BulletinBoard::current_date_for_message_key();
         BulletinBoard::mark_message_read($tree,$login->username(),$key,$date);
       }
@@ -366,49 +368,49 @@ if (! -e $js_cache) {
   if (!Url::par_is("login","form")) {
     if ($login->logged_in()) {
       my $have_workfile = -e ($tree->student_work_file_name($login->username()));
-      print
+      $out = $out . 
                "<b>".$tree->get_real_name($login->username(),"firstlast")."</b> logged in "
               ." | <a href=\"".Url::link(REPLACE=>'what',REPLACE_WITH=>'account',DELETE=>'(login|journal|send_to)')."\">account</a>"
               ." | <a href=\"".Url::link(REPLACE=>'what',REPLACE_WITH=>'grades', DELETE=>'(login|journal|send_to)')."\">grades</a>"
               ." | <a href=\"".Url::link(REPLACE=>'what',REPLACE_WITH=>'email',  DELETE=>'(login|journal|send_to)')."\">e-mail</a>";
       if ($have_journals) {
-          print
+          $out = $out . 
                " | <a href=\"".Url::link(REPLACE=>'what',REPLACE_WITH=>'edit',DELETE=>'(login|journal|send_to)')."\">edit</a>";
         }
       if ($have_workfile) {
-          print
+          $out = $out . 
                " | <a href=\"".Url::link(REPLACE=>'what',REPLACE_WITH=>'answers',DELETE=>'(login|journal|send_to)')."\">answers</a>";
       }
-      print
+      $out = $out . 
                " | <a href=\"".Url::link(REPLACE=>'login',REPLACE_WITH=>'log_out',
                                             REPLACE2=>'what',REPLACE_WITH2=>'check',DELETE_ALL=>1)."\">log out</a><br>\n";
     }
     else {
-      print "not logged in | <a href=\"".Url::link(REPLACE=>'login',REPLACE_WITH=>'form')."\">log in</a><br>\n";
-      print "(You can check your answers to problems without being logged in.)<p>\n";
+      $out = $out .  "not logged in | <a href=\"".Url::link(REPLACE=>'login',REPLACE_WITH=>'form')."\">log in</a><br>\n";
+      $out = $out .  "(You can check your answers to problems without being logged in.)<p>\n";
     }
   }
 
   if ((!($login->logged_in())) && (!($login->login_error())) && (! Url::par_is("login","form") ) && $SpotterHTMLUtil::cgi->param('username')  && ! ($login->get_cookie()) ) {
     my $username = $SpotterHTMLUtil::cgi->param('username');
-    print "<b>Warning: You have not successfully logged in as $username. This appears to be because your browser's preferences are set not to accept cookies from this site.</b><br>\n";
+    $out = $out .  "<b>Warning: You have not successfully logged in as $username. This appears to be because your browser's preferences are set not to accept cookies from this site.</b><br>\n";
   }
 
   if ($have_journals && Url::par_is("what","edit")) {
     my $first_one = 1;
-    print "<p><b>edit</b> ";
+    $out = $out .  "<p><b>edit</b> ";
     foreach my $j(@journals_list) {
-      if (!$first_one) {print " | "}
+      if (!$first_one) {$out = $out .  " | "}
       $first_one = 0;
-      print
+      $out = $out . 
                "<a href=\"".Url::link(REPLACE=>'what',REPLACE_WITH=>'edit',DELETE=>'login',
                                             REPLACE2=>'journal',REPLACE_WITH2=>$j)."\">".$journals{$j}."</a>";
     }
-    print "<p>\n";
+    $out = $out .  "<p>\n";
   }
 
   if (Url::par_is("login","form")) {
-    do_login_form();
+    $out = $out .  do_login_form();
   }
   if (Url::par_is("login","set_cookie")) {
     SpotterHTMLUtil::debugging_output("username=".$SpotterHTMLUtil::cgi->param('username'));
@@ -416,11 +418,11 @@ if (! -e $js_cache) {
   }
 
   if (Url::par_set("login") && !Url::par_is("login","form") && $login->login_error()) {
-    print "<p><b>Error: ".$login->login_error()."</b></p>\n";
+    $out = $out .  "<p><b>Error: ".$login->login_error()."</b></p>\n";
   }
 
   if (Url::par_set("login") && !Url::par_is("login","log_out") && $tree->class_err()) {
-    print "<p><b>Error: ".$tree->class_err()."</b></p>\n";
+    $out = $out .  "<p><b>Error: ".$tree->class_err()."</b></p>\n";
   }
 
 
@@ -428,7 +430,7 @@ if (! -e $js_cache) {
 # Do real stuff.
 #----------------------------------------------------------
   if (!$fatal_error && !Url::par_is("login","form")) {
-    print toc_div(); # Filled in by toc_js_code below.
+    $out = $out .  toc_div(); # Filled in by toc_js_code below.
     if (Url::par_is("what","check")) {
       # Seed the random number generator. We don't really want the numbers to
       # be random. We want the same random numbers to be used every time a particular
@@ -448,7 +450,7 @@ if (! -e $js_cache) {
         my $output;
         do_a_problem($xmlfile,$cache_parsed_xml,\$fatal_error,\$output);
         if ($fatal_error ne '') {Log_file::write_entry(TEXT=>"fatal error from do_a_problem: $fatal_error")}
-        print $output;
+        $out = $out .  $output;
       }
     }
     if (Url::par_is("what","emailpassword")) {
@@ -470,10 +472,10 @@ if (! -e $js_cache) {
              BODY=>("To reset your password, please go the following web address:\n".
                  Url::link(REPLACE=>'what',REPLACE_WITH=>'resetpassword',REPLACE2=>'username',REPLACE_WITH2=>$username,
                             REPLACE3=>'key',REPLACE_WITH3=>$key,RELATIVE=>0)));
-        print "An e-mail has been sent to you with information on how to set a new password.<p>\n";
+        $out = $out .  "An e-mail has been sent to you with information on how to set a new password.<p>\n";
       }
       else { # We also end up here if the username is null or invalid.
-        print "$bogus<p>\n";
+        $out = $out .  "$bogus<p>\n";
       }
     }
     if (Url::par_is("what","resetpassword")) {
@@ -483,18 +485,18 @@ if (! -e $js_cache) {
       if ($key eq $key2 && $key2 ne '') {
         $tree->set_student_par($username,'state','notactivated');
         $tree->set_student_par($username,'newpasswordkey','');
-        print "Your account has been inactivated, and you can now reactivate it by typing in your student ID and choosing ";
-        print 'a new password. <a href="'.Url::link(REPLACE=>'login',REPLACE_WITH=>'form',REPLACE2=>'what',REPLACE_WITH2=>'check',
+        $out = $out .  "Your account has been inactivated, and you can now reactivate it by typing in your student ID and choosing ";
+        $out = $out .  'a new password. <a href="'.Url::link(REPLACE=>'login',REPLACE_WITH=>'form',REPLACE2=>'what',REPLACE_WITH2=>'check',
                                            DELETE=>'key').'">';
-        print "Click here</a> to reactivate your account.<p>\n";
+        $out = $out .  "Click here</a> to reactivate your account.<p>\n";
       }
       else {
-        print "Error: invalid key.<p>\n";
+        $out = $out .  "Error: invalid key.<p>\n";
       }
     }
 
     if (Url::par_is("what","account")) {
-      do_account();
+      $out = $out .  do_account();
     }
 
     if (Url::par_is("what","email")) {
@@ -513,28 +515,28 @@ if (! -e $js_cache) {
         }
       }
       if ($bogus eq '') {
-        do_email($username,$own_email);
+        $out = $out .  do_email($username,$own_email);
       }
       else {
-        print "<p>$bogus</p>\n";
+        $out = $out .  "<p>$bogus</p>\n";
       }
     }
 
     if (Url::par_is("what","grades")) {
       if ($login->logged_in()) {
-        do_grades();
+        $out = $out .  do_grades();
       }
       else {
-        print "You must be logged in to check your grade.<p>\n";
+        $out = $out .  "You must be logged in to check your grade.<p>\n";
       }
     }
 
     if (Url::par_is("what","answers")) {
       if ($login->logged_in()) {
-        do_answers();
+        $out = $out .  do_answers();
       }
       else {
-        print "You must be logged in to look at your answers.<p>\n";
+        $out = $out .  "You must be logged in to look at your answers.<p>\n";
       }
     }
 
@@ -542,10 +544,10 @@ if (! -e $js_cache) {
       my $which_journal = Url::par("journal");
       if ($which_journal ne '') {
         if ($login->logged_in()) {
-          do_edit_journal($which_journal);
+          $out = $out .  do_edit_journal($which_journal);
         }
         else {
-          print "You must be logged in to edit.<p>\n";
+          $out = $out .  "You must be logged in to edit.<p>\n";
         }
       }
     }
@@ -554,12 +556,12 @@ if (! -e $js_cache) {
       my $which_journal = Url::par("journal");
       if ($which_journal ne '') {
         if ($login->logged_in()) {
-          do_view_old($which_journal);
+          $out = $out .  do_view_old($which_journal);
         }
       }
     }
 
-    print toc_js_code(Url::param_hash()); # Fills in the <div> generated by toc_div(). See note in TODO.
+    $out = $out .  toc_js_code(Url::param_hash()); # Fills in the <div> generated by toc_div(). See note in TODO.
 
   } # end if (!$fatal_error && !Url::par_is("login","form"))
 
@@ -577,7 +579,6 @@ sub do_a_problem {
     my %params = Url::param_hash();
     my $err = do_answer_check($xml_data,\$output_early,\$output_middle,\$output_late,\%params);
     if ($err ne '') {$fatal_error = $err}
-    #print "<p>return code from do_answer_check = $err.</p>";
     $$output_ref = $output_early.$output_middle.$output_late;
     if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"done parsing the xml file")}
   }
@@ -610,15 +611,20 @@ JS
 #---------------------------------------------------------
 
 if ($fatal_error) {
-  print "<p>Error: $fatal_error</p>\n";
+  $out = $out .  "<p>Error: $fatal_error</p>\n";
 }
 
-print "<p>time: ".current_date_string()." CST</p>\n";
+$out = $out .  "<p>time: ".current_date_string()." CST</p>\n";
 
-print SpotterHTMLUtil::accumulated_debugging_output();
+$out = $out .  SpotterHTMLUtil::accumulated_debugging_output();
 
-print SpotterHTMLUtil::FooterHTML($tree);
+$out = $out .  SpotterHTMLUtil::FooterHTML($tree);
 if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"done writing html output")}
+
+#--------------------------------------------------------------------------------------------------
+
+# Print all the html that has been accumulated above.
+print $out;
 
 #--------------------------------------------------------------------------------------------------
 
@@ -686,7 +692,7 @@ sub do_edit_journal {
       $old = tint('journal.old_versions_form','n'=>$n,'url'=>$url);
     }
   }
-  print tint('journal.edit_page',
+  return tint('journal.edit_page',
     'cooked_text'=>Journal::format_journal_as_html($text),
     'form'=>($is_locked ? tint('journal.is_locked') : tint('journal.edit_text_form','url_link'=>Url::link(),'text'=>$text) ),
     'old'=>$old
@@ -699,7 +705,8 @@ sub do_view_old {
   my $journal = shift;
   my $version = $SpotterHTMLUtil::cgi->param('version');
   my $username = $login->username();
-  print "<h2>Viewing old version $version of $journal</h2>\n";
+  my $out = '';
+  $out = $out . "<h2>Viewing old version $version of $journal</h2>\n";
   my $diffs_dir = $tree->diffs_directory();
   my $journal_diffs_dir = "$diffs_dir/$username/$journal";
   my @diffs = sort <$journal_diffs_dir/*>;
@@ -715,37 +722,44 @@ sub do_view_old {
   open(FILE,"<$rebuild");
   my $text = <FILE>;
   close FILE;
-  print "<pre>$text</pre>";
+  $out = $out . "<pre>$text</pre>";
+  return $out;
 }
 
 sub do_answers {
+  my $out = '';
   my ($err,$answers) = WorkFile::list_all_correct_answers_for_one_student($tree,$login->username());
   if ($err eq '') {
     my @answers = @$answers;
-    print tint('checker.explain_answer_list');
+    $out = $out .  tint('checker.explain_answer_list');
     foreach my $answer(@answers) {
-      print "$answer<br/>\n";
+      $out = $out .  "$answer<br/>\n";
     }
   }
   else {
-    print "<p>Error: $err</p>\n";
+    $out = $out .  "<p>Error: $err</p>\n";
   }
+  return $out;
 }
 
 sub do_grades {
   local $/; # slurp the whole file
+  my $out = '';
   my $err = 0;
   my $username = $login->username();
   my $filename = $tree->grade_report_file_name($username);
   open(REPORT,"<$filename") or $err=1;
-  if ($err) {print "Error opening grade report.<p>\n"; return}
-  print <REPORT>;
+  if ($err) {$out = $out . "Error opening grade report.<p>\n"; return}
+  $out = $out . <REPORT>;
   close REPORT;
+  return $out;
 }
 
 sub do_email {
       my $username = shift;
       my $own_email = shift;
+
+      my $out = '';
 
       if (Url::par_set("send_to")) {
         my $own_name = $tree->get_real_name($username,"firstlast");
@@ -754,54 +768,54 @@ sub do_email {
         my $subject2 = $SpotterHTMLUtil::cgi->param('emailSubject');
         my $link = Url::link();
         my $body = $SpotterHTMLUtil::cgi->param('emailBody');
-        #print "calling, link=$link,body=$body,sub1=$subject1,sub2=$subject2<p>\n";
         Email::send_email_from_student($username,$own_email,$own_name,Url::par("send_to"),$link,$body,
                $subject1,$subject2);
-        return;
+        return $out;
       }
 
       my @roster = $tree->get_roster();
-      print tint('checker.explain_email_privacy');
-      print "<table>\n";
+      $out = $out . tint('checker.explain_email_privacy');
+      $out = $out . "<table>\n";
       my $instructor_emails = $tree->instructor_emails();
       my @instructors = keys %$instructor_emails;
       if (@instructors) {
         my $form = "instructors";
         if (@instructors==1) {$form = "instructor"}
-        print "<tr><td><i>$form</i></td></tr>\n";
+        $out = $out . "<tr><td><i>$form</i></td></tr>\n";
       }
       foreach my $who(@instructors) {
         my $email = $instructor_emails->{$who};
-        print "<tr>";
-        print "<td>$who</td>\n<td>";
+        $out = $out . "<tr>";
+        $out = $out . "<td>$who</td>\n<td>";
         if ($email ne '') {
-          print link_to_send_email($email);
+          $out = $out . link_to_send_email($email);
         }
         else {
-          print '---';
+          $out = $out . '---';
         }
-        print "</td></tr>\n";
+        $out = $out . "</td></tr>\n";
         
       }
-      print "<tr><td><i>students</i></td></tr>\n";
+      $out = $out . "<tr><td><i>students</i></td></tr>\n";
       foreach my $who(@roster) {
-        print "<tr>";
-        print "<td>".$tree->get_real_name($who,"lastfirst")."</td>\n<td>";
+        $out = $out . "<tr>";
+        $out = $out . "<td>".$tree->get_real_name($who,"lastfirst")."</td>\n<td>";
         if (Email::syntactically_valid($tree->get_student_par($who,"email")) && $tree->get_student_par($who,"emailpublic")) {
           my $email = $tree->get_student_par($who,"email");
-          print link_to_send_email($email);
+          $out = $out . link_to_send_email($email);
         }
         else {
           if (!Email::syntactically_valid($tree->get_student_par($who,"email"))) {
-            print '---'; # no (syntactically valid) address given
+            $out = $out . '---'; # no (syntactically valid) address given
           }
           else {
-            print '(not public)'; # address given, but not public
+            $out = $out . '(not public)'; # address given, but not public
           }
         }
-        print "</td></tr>\n";
+        $out = $out . "</td></tr>\n";
       }
-      print "</table>\n";
+      $out = $out . "</table>\n";
+      return $out;
 }
 
 sub link_to_send_email {
@@ -816,7 +830,7 @@ sub do_account {
   my $email = $tree->get_student_par($login->username(),'email');
   my $emailpublic = $tree->get_student_par($login->username(),'emailpublic');
   my $url = Url::link(REPLACE=>'login',REPLACE_WITH=>'set_cookie',REPLACE2=>'what',REPLACE_WITH2=>'check');
-  print tint('checker.your_account_form','url'=>$url,'email'=>$email,'emailpublic'=>($emailpublic ? 'checked' : ''));
+  return tint('checker.your_account_form','url'=>$url,'email'=>$email,'emailpublic'=>($emailpublic ? 'checked' : ''));
 }
 
 sub do_login_form {
@@ -824,40 +838,41 @@ sub do_login_form {
   my $username = '';
   my $disabled = 0;
   my $state = '';
+  my $out = '';
   if (Url::par_set("class") && !$tree->class_err()) {
     $step = 2;
     $username = Url::par('username');
     $disabled = ($tree->get_student_par($username,'disabled'));
     $state = ($tree->get_student_par($username,'state'));
-    #  print "<p>--- state=$state </p>\n";
+    #  $out = $out . "<p>--- state=$state </p>\n";
     if ($username) {$step=3}
   }
   if ($disabled) {
-    print "Your account has been disabled.<p>\n";
+    $out = $out . "Your account has been disabled.<p>\n";
   }
   else {
     if ($step==1) { # set class
-      print "To log in, start from the link provided on your instructor's web page.<p>\n";
+      $out = $out . "To log in, start from the link provided on your instructor's web page.<p>\n";
       # has to have &class=bcrowell/f2002/205 or whatever in the link
     }
     if ($step==2) { # set username
       my @roster = $tree->get_roster();
-      print "<p><b>Click on your name below:</b><br>\n";
+      $out = $out . "<p><b>Click on your name below:</b><br>\n";
       foreach my $who(sort {$tree->get_real_name($a,"lastfirst") cmp $tree->get_real_name($b,"lastfirst")} @roster) {
-        print '<a href="'.Url::link(REPLACE=>'username',REPLACE_WITH=>$who).'">';
-        print $tree->get_real_name($who,"lastfirst");
-        print "</a><br>\n";
+        $out = $out . '<a href="'.Url::link(REPLACE=>'username',REPLACE_WITH=>$who).'">';
+        $out = $out . $tree->get_real_name($who,"lastfirst");
+        $out = $out . "</a><br>\n";
       }
     }
     if ($step==3) { # enter password, and, if necessary, activate account
-      print "<b>".$tree->get_real_name($username,"firstlast")."</b><br>\n";
+      $out = $out . "<b>".$tree->get_real_name($username,"firstlast")."</b><br>\n";
       my $date = current_date_string();
-      print tint('user.password_form',
+      $out = $out . tint('user.password_form',
         'url'=>Url::link(REPLACE=>'login',REPLACE_WITH=>'set_cookie'),
         'username'=>$username
       );
       if ($state eq 'normal') {
-        print tint('user.forgot_password',
+        $out = $out . tint('user.forgot_password',
           'url'=>Url::link(DELETE=>'login',REPLACE=>'what',REPLACE_WITH=>'emailpassword',DELETE=>'login'),
           'username'=>$username,
           'date'=>current_date_string(),
@@ -869,6 +884,7 @@ sub do_login_form {
       }
     }
   }
+  return $out;
 }
 
 #----------------------------------------------------------------
@@ -904,7 +920,6 @@ sub do_answer_check {
         $next = $toc if $toc->{'num'} eq $want_number;
       }
       return "problem not found, no number $want_number at level $hierarchy[$i]" if ! defined $next;
-      #print "<p>found $hierarchy[$i]=$want_number</p>";
       if ($i<$deepest-2) {$tocs = $next->{'toc'}} else {$tocs=$next}
     }
   }
@@ -956,7 +971,6 @@ sub do_answer_check {
     $p->options_stack_top()->unit_list($unit_list->[-1]);
   }
 
-  #print "<p>p->description()=".$p->description()."=</p>\n" if 0;
   if ($p->type eq 'expression') {
     my $a = $SpotterHTMLUtil::cgi->param("answer");
     $output[1] = $output[1] . handle_mathematical_answer($a,$p,$login,$xmlfile,\@hierarchy);
@@ -1170,7 +1184,6 @@ sub get_query_info {
           my $who = '';
           if ($login->logged_in()) {$who = $login->username()}
           my $query_sha1 = Digest::SHA::sha1_base64($description); 
-          print "<p>get_query_info gives query=$query, query_sha1=$query_sha1, description=$description=</p>\n" if $debug;
           return ($query,$ip,$date_string,$throttle_dir,$when,$who,$query_sha1);
 }
 
@@ -1279,15 +1292,18 @@ sub record_work {
 
 # Shift as much work onto the user's CPU as possible. Write JS code that has lots of data
 # from the answer file (but not the answers themselves).
+# Returns [severity,error], where severity=0 means normal, 1 means soft error, 2 means error that should be reported.
 sub jsify {
   my $xmlfile = shift;
   my $js_cache = shift;
+
+  my $return_value = [0,''];
 
   my $parser = new XML::Parser(ErrorContext => 2);
 
   unless (open(JS,">$js_cache")) {
     SpotterHTMLUtil::debugging_output("failed, $!"); 
-    return; # soft error since, e.g., some other process may currently be updating it
+    return [1,"error opening $js_cache for output"]; # soft error since, e.g., some other process may currently be updating it
   }
 
   my %num = ();
@@ -1411,7 +1427,7 @@ STUFF
     my $pushed = 0;
     if ((!defined $toc->{'num'}) and defined $toc->{'title'}) {
       Log_file::write_entry(TEXT=>"error in jsify, no number defined in toc for a child of ".join('_',@toc)."; look in javascript generated in html for 'error here'");
-      print "<p>Error parsing XML file, see log.</p>";
+      $return_value = [2,"Error parsing XML file, see log."];
       print JS "// error here\n";
     }
     if (defined $toc->{'num'} and defined $toc->{'title'}) {
@@ -1436,7 +1452,7 @@ STUFF
       else {
         Log_file::write_entry(TEXT=>"error in jsify, would have overwritten head of toc, possibly because no number defined in toc for a child of ".join('_',@toc)
                                       ."; look in javascript generated in html for 'error here'");
-        print "<p>Error parsing XML file, see log.</p>";
+        $return_value = [2, "Error parsing XML file, see log."];
       print JS "// error here\n";
       }
     }
@@ -1448,4 +1464,5 @@ STUFF
   };
   &$do_toc($head);
   close JS;
+  return $return_value;
 }
