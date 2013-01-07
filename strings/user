@@ -33,7 +33,6 @@ password_form = <<__html__
   <input type="submit" value="Log in.">
 </form>
 If you're not $real_name, <a href="$not_me_url">click here</a>.<p>
-You must have cookies enabled in your browser in order to log in.<p>
 __html__
 
 ==== The following is an optional part of a larger login form.

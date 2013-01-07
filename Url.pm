@@ -84,6 +84,8 @@ sub link {
     if (!($q =~ m/$r/)) {$q=$q."&$r=$rw";}
     $q =~ s/$r=[^=\&]*/$r=$rw/;
   }
+
+  unless ($q=~/sid=/) {$q = $q . "&sid=".WebInterface::session_id();} # make sure it always has this
   
   # Tidy up.
   $q =~ s/\&\&+/\&/g; # replace && with &

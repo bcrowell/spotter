@@ -1,3 +1,5 @@
+use strict;
+
 sub throttle_file_name {
             my $throttle_dir = shift;
             my $date_string = shift;
@@ -27,6 +29,7 @@ sub throttle_ok {
             my $return_number = shift; # scalar ref
             my $return_longest_interval_violated = shift; # scalar ref
             my $return_when_over = shift; # scalar ref
+            my $ip = shift;
 
             my $debug = 0;
 

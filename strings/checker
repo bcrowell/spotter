@@ -57,7 +57,7 @@ __explain__
 
 your_account_form=<<__form__
 <p><b>Your Account</b><p>
-<form method="POST" action="$url">';
+<form method="POST" action="$url">
 <p>E-mail address:<br>
 <input type="text" name="email" size="50" maxlength="50" value="$email"><br>
 <input type="checkbox" name="emailpublic" $emailpublic value="public"> 

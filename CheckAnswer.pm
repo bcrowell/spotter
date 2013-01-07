@@ -1,10 +1,13 @@
+use strict;
+
 # Subs in this file are supposed to be pure functions. No side-effects, no dependence on
 # global variables.
 
 sub handle_mathematical_answer {
-        my ($answer_param,$p,$login,$xmlfile,$hierarchy,$data_dir) = @_;
+        my ($answer_param,$p,$login,$xmlfile,$hierarchy,$data_dir,$tree) = @_;
         my $output = '';
         my ($messages, $ans,$unit_list, $units_allowed,$vars) = poke_and_prod_student_answer($answer_param,$p);
+        SpotterHTMLUtil::debugging_output("in handle_mathematical_answer, ref(tree)=".ref($tree)."="); # qwe
         $output = $output . $messages;
         my ($query,$ip,$date_string,$throttle_dir,$when,$who,$query_sha1,
                             $exempt,$anon_forbidden,$forbidden_because_anon,$throttle_ok,$throttle_message,$problem_label) 
@@ -100,6 +103,7 @@ sub respond_to_query {
             $return = $return .  "Try again:<br/>";
           }
           if ($login->logged_in()) {
+            SpotterHTMLUtil::debugging_output("in respond_to_query, ref(tree)=".ref($tree)."="); # qwe
             $recording_err = record_work(LOGIN=>$login,FILE_TREE=>$tree,ANSWER=>$ans,IS_CORRECT=>$student_answer_is_correct,
                      RESPONSE=>$response,DESCRIPTION=>$p->description(),QUERY=>$query);
             $confirm_recorded = $student_answer_is_correct && ($recording_err eq '');
@@ -165,7 +169,7 @@ sub set_up_query_stuff {
           my $anon_forbidden = anon_forbidden_from_this_ip($ip,$throttle_dir); # Forbid anonymous use from certain addresses, e.g., your own school.
           my $forbidden_because_anon = ($anon_forbidden && $who eq '');
           my ($number,$longest_interval_violated,$when_over);
-          my $throttle_ok = $ans eq '' || throttle_ok($throttle_dir,$date_string,$query_sha1,$who,$when,\$number,\$longest_interval_violated,\$when_over);
+          my $throttle_ok = $ans eq '' || throttle_ok($throttle_dir,$date_string,$query_sha1,$who,$when,\$number,\$longest_interval_violated,\$when_over,$ip);
           my $reason_forbidden = '';
           my $exempt_message = '';
           if (!$throttle_ok) {

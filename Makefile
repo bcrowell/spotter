@@ -34,7 +34,7 @@ install: Tint.pm
 
 depend:
 	# The following is for debian, ubuntu, etc.:
-	apt-get install libxml-parser-perl libxml-simple-perl libdigest-sha-perl libjson-perl libmail-sendmail-perl libcgi-application-plugin-authentication-perl
+	apt-get install libxml-parser-perl libxml-simple-perl libdigest-sha-perl libjson-perl libmail-sendmail-perl libcgi-application-plugin-authentication-perl libcgi-session-perl
 
 clean:
 	rm -f doc.log

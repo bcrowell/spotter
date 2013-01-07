@@ -460,7 +460,7 @@ h5.journal
                                                        ],
                                                        [
                                                          'lit',
-                                                         '">\';
+                                                         '">
 <p>E-mail address:<br>
 <input type="text" name="email" size="50" maxlength="50" value="'
                                                        ],
@@ -615,7 +615,6 @@ If you\'re not '
                                                 [
                                                   'lit',
                                                   '">click here</a>.<p>
-You must have cookies enabled in your browser in order to log in.<p>
 '
                                                 ]
                                               ],
