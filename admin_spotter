@@ -10,7 +10,7 @@ use JSON 2.0;
 use strict;
 
 my $user = getlogin()  || (scalar getpwuid($<)) || `whoami`; 
-        # for some reason getlogin() fails in ubuntu; http://perlmonks.org/?node_id=1011924
+        # https://bugs.launchpad.net/ubuntu/+source/eglibc/+bug/1032740
 $user =~ s/\n$//;
 
 if (!($user=~/\w/)) {die "unable to detect username"}
