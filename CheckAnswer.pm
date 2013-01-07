@@ -23,7 +23,7 @@ sub poke_and_prod_student_answer {
          # any portion of the string, or it would be risky in terms of security.
          if (index($raw_ans,"=")>=0) {
            $raw_ans = substr($raw_ans,index($raw_ans,"=")+1);
-           $messages = $messages . SpotterText::no_equals_sign_in_answers();
+           $messages = $messages . tint('checker.no_equals_sign_in_answers');
          }
 
         my ($ans,$insane) = SpotterHTMLUtil::sanity_check(TEXT=>$raw_ans);
@@ -51,7 +51,7 @@ sub poke_and_prod_student_answer {
             $ans = "";
           }
           if ($ans && !($m->reduces_to_unitless(\%Spotter::standard_units))) {
-            $messages = $messages . SpotterText::do_not_type_units();
+            $messages = $messages . tint('checker.do_not_type_units');
             $ans = "";
           }
           if ($ans ne "") {
@@ -148,7 +148,7 @@ JS
                      "Debugging::recording_answers, ".join(' ** ',($who,$ip,$recording_err,$query,$ans,$recording_feedback))
               );
         }
-        $return = $return .  SpotterText::how_to_enter_answers();
+        $return = $return .  tint('checker.how_to_enter_answers');
         return $return;
 
 }
@@ -169,18 +169,20 @@ sub set_up_query_stuff {
           my $reason_forbidden = '';
           my $exempt_message = '';
           if (!$throttle_ok) {
-            $reason_forbidden = SpotterText::time_out($number,$longest_interval_violated,$when_over);
-            $exempt_message = SpotterText::exempt_from_time_out($number,$longest_interval_violated);
+            $reason_forbidden = tint('checker.time_out',
+                          'number'=>$number,'interval'=>$longest_interval_violated,'expire'=>$when_over);
+            $exempt_message = tint('checker.exempt_from_time_out',
+                          'number'=>$number,'interval'=>$longest_interval_violated);
             my $add_on = '';
-            if ($who eq '') { $add_on = SpotterText::anonymous_time_out(); }
+            if ($who eq '') { $add_on = tint('checker.anonymous_time_out') }
             $reason_forbidden = "$reason_forbidden$add_on";
             $exempt_message = "$exempt_message$add_on";
             $exempt_message =~ s/\)\s+\(/ /g; # don't put two parenthetical statements in a row; combine them instead
           }
           if ($forbidden_because_anon) {
             $throttle_ok = 0;
-            $reason_forbidden=SpotterText::anonymous_forbidden();
-            $exempt_message=SpotterText::anonymous_forbidden_but_exempt();
+            $reason_forbidden=tint('checker.anonymous_forbidden');
+            $exempt_message=tint('checker.anonymous_forbidden_but_exempt');
           }
           my $throttle_message = '';
           if (!$throttle_ok) {
