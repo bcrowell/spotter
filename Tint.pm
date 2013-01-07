@@ -25,6 +25,50 @@ the class to have access to this e-mail address.<br>
                                                  ],
                                        'args' => []
                                      },
+          'checker.time_out' => {
+                                  'text' => [
+                                              [
+                                                'lit',
+                                                '            Too many answers have been entered in a short time period on this computer and/or this account.
+             To discourage random guessing, longer and longer wait times are required if you
+             keep on entering answers over and over.
+             If you\'re having trouble doing this problem, maybe you should get help from your instructor!
+             You have entered more than '
+                                              ],
+                                              [
+                                                'ref',
+                                                'number'
+                                              ],
+                                              [
+                                                'lit',
+                                                ' answers within 
+             '
+                                              ],
+                                              [
+                                                'ref',
+                                                'interval'
+                                              ],
+                                              [
+                                                'lit',
+                                                ' seconds.
+             This waiting period will expire in '
+                                              ],
+                                              [
+                                                'ref',
+                                                'expire'
+                                              ],
+                                              [
+                                                'lit',
+                                                ' seconds.
+'
+                                              ]
+                                            ],
+                                  'args' => [
+                                              'number',
+                                              'interval',
+                                              'expire'
+                                            ]
+                                },
           'journal.edit_text_form' => {
                                         'text' => [
                                                     [
@@ -59,6 +103,18 @@ the class to have access to this e-mail address.<br>
                                                     'text'
                                                   ]
                                       },
+          'checker.anonymous_time_out' => {
+                                            'text' => [
+                                                        [
+                                                          'lit',
+                                                          '   <p> (Since you\'re using Spotter anonymously, you may get this message even if it\'s the first
+              time you\'ve attempted the problem. This is because Spotter considers all anonymous
+              users to be the same person.)</p>
+'
+                                                        ]
+                                                      ],
+                                            'args' => []
+                                          },
           'responses.sig_fig_lecture' => {
                                            'text' => [
                                                        [
@@ -109,6 +165,37 @@ right but not others, only the ones you got right are listed here.</p>
                                              ],
                                    'args' => []
                                  },
+          'checker.exempt_from_time_out' => {
+                                              'text' => [
+                                                          [
+                                                            'lit',
+                                                            '          (This answer file is exempt from waiting time requirements, but 
+               you have entered more than '
+                                                          ],
+                                                          [
+                                                            'ref',
+                                                            'number'
+                                                          ],
+                                                          [
+                                                            'lit',
+                                                            ' answers within 
+               '
+                                                          ],
+                                                          [
+                                                            'ref',
+                                                            'interval'
+                                                          ],
+                                                          [
+                                                            'lit',
+                                                            ' seconds.)
+'
+                                                          ]
+                                                        ],
+                                              'args' => [
+                                                          'number',
+                                                          'interval'
+                                                        ]
+                                            },
           'user.forgot_password' => {
                                       'text' => [
                                                   [
@@ -145,6 +232,16 @@ how to set a new password.<br>
                                                   'username'
                                                 ]
                                     },
+          'checker.do_not_type_units' => {
+                                           'text' => [
+                                                       [
+                                                         'lit',
+                                                         '   <p>For this problem, don\'t type in the units. Use the pop-up menu on the right.</p>
+'
+                                                       ]
+                                                     ],
+                                           'args' => []
+                                         },
           'checker.explain_email_privacy' => {
                                                'text' => [
                                                            [
@@ -158,22 +255,17 @@ addresses to anyone outside the class.</p>
                                                          ],
                                                'args' => []
                                              },
-          'boilerplate.default_banner_html' => {
-                                                 'text' => [
-                                                             [
-                                                               'lit',
-                                                               '    <table><tr><td><img src="http://www.lightandmatter.com/spotter/spotterlogo.jpg" width="123" height="184"></td><td>
-    <h1>Spotter</h1>
-    <p>A numerical and symbolic answer<br/>
-       checker for math and science students.</p>
-    <p><a href="http://www.lightandmatter.com/spotter/spotter.html">About Spotter</a>.<p/>
-
-    </td></tr></table>
+          'checker.anonymous_forbidden_but_exempt' => {
+                                                        'text' => [
+                                                                    [
+                                                                      'lit',
+                                                                      '   <p>(Anonymous access is not normally allowed from your location,
+       but this answer file is exempt from that restriction.)</p>
 '
-                                                             ]
-                                                           ],
-                                                 'args' => []
-                                               },
+                                                                    ]
+                                                                  ],
+                                                        'args' => []
+                                                      },
           'journal.old_versions_form' => {
                                            'text' => [
                                                        [
@@ -217,6 +309,71 @@ addresses to anyone outside the class.</p>
                                                        'url'
                                                      ]
                                          },
+          'boilerplate.default_banner_html' => {
+                                                 'text' => [
+                                                             [
+                                                               'lit',
+                                                               '    <table><tr><td><img src="http://www.lightandmatter.com/spotter/spotterlogo.jpg" width="123" height="184"></td><td>
+    <h1>Spotter</h1>
+    <p>A numerical and symbolic answer<br/>
+       checker for math and science students.</p>
+    <p><a href="http://www.lightandmatter.com/spotter/spotter.html">About Spotter</a>.<p/>
+
+    </td></tr></table>
+'
+                                                             ]
+                                                           ],
+                                                 'args' => []
+                                               },
+          'journal.edit_page' => {
+                                   'text' => [
+                                               [
+                                                 'lit',
+                                                 '<p>If you scroll down, first you\'ll see your current version of your text with all the formatting, and then below that you\'ll 
+see a window in which you can edit your text. To make a paragraph break, put in a blank line between the paragraphs. 
+To make a section heading, put the heading on a line by itself, with an equals sign, =, at the beginning of the line. 
+Subsection headings are made with a ==, and subsubsections with a ===. 
+To make a table of data, put a * at the beginning of each line.</p>
+<p>Your changes will not be saved until you click on the Save button! To avoid losing changes by mistake, you should make 
+a habit of saving your text very often as you work on it.</p>
+
+<h2>Last Saved Version</h2>'
+                                               ],
+                                               [
+                                                 'ref',
+                                                 'cooked_text'
+                                               ],
+                                               [
+                                                 'lit',
+                                                 '<p/>
+<h2>Edit</h2>
+'
+                                               ],
+                                               [
+                                                 'ref',
+                                                 'form'
+                                               ],
+                                               [
+                                                 'lit',
+                                                 '
+'
+                                               ],
+                                               [
+                                                 'ref',
+                                                 'old'
+                                               ],
+                                               [
+                                                 'lit',
+                                                 '
+'
+                                               ]
+                                             ],
+                                   'args' => [
+                                               'cooked_text',
+                                               'form',
+                                               'old'
+                                             ]
+                                 },
           'boilerplate.header_html' => {
                                          'text' => [
                                                      [
@@ -280,55 +437,16 @@ h5.journal
                                                      'spotter_js_dir'
                                                    ]
                                        },
-          'journal.edit_page' => {
-                                   'text' => [
-                                               [
-                                                 'lit',
-                                                 '<p>If you scroll down, first you\'ll see your current version of your text with all the formatting, and then below that you\'ll 
-see a window in which you can edit your text. To make a paragraph break, put in a blank line between the paragraphs. 
-To make a section heading, put the heading on a line by itself, with an equals sign, =, at the beginning of the line. 
-Subsection headings are made with a ==, and subsubsections with a ===. 
-To make a table of data, put a * at the beginning of each line.</p>
-<p>Your changes will not be saved until you click on the Save button! To avoid losing changes by mistake, you should make 
-a habit of saving your text very often as you work on it.</p>
-
-<h2>Last Saved Version</h2>'
-                                               ],
-                                               [
-                                                 'ref',
-                                                 'cooked_text'
-                                               ],
-                                               [
-                                                 'lit',
-                                                 '<p/>
-<h2>Edit</h2>
+          'checker.anonymous_forbidden' => {
+                                             'text' => [
+                                                         [
+                                                           'lit',
+                                                           '   <p>Anonymous access is not allowed from your location. Please log in.</p>
 '
-                                               ],
-                                               [
-                                                 'ref',
-                                                 'form'
-                                               ],
-                                               [
-                                                 'lit',
-                                                 '
-'
-                                               ],
-                                               [
-                                                 'ref',
-                                                 'old'
-                                               ],
-                                               [
-                                                 'lit',
-                                                 '
-'
-                                               ]
-                                             ],
-                                   'args' => [
-                                               'cooked_text',
-                                               'form',
-                                               'old'
-                                             ]
-                                 },
+                                                         ]
+                                                       ],
+                                             'args' => []
+                                           },
           'checker.your_account_form' => {
                                            'text' => [
                                                        [
@@ -384,6 +502,18 @@ your password at the bottom of the form and press the Change Settings button.</i
                                                        'emailpublic'
                                                      ]
                                          },
+          'responses.units_lecture' => {
+                                         'text' => [
+                                                     [
+                                                       'lit',
+                                                       'Your answer has the wrong units, so either you made a mistake in your algebra or you entered your answer incorrectly.
+A typical mistake would be to enter a+b/c+d when you really meant (a+b)/(c+d).
+Scroll down for more information on how to enter answers into Spotter.
+'
+                                                     ]
+                                                   ],
+                                         'args' => []
+                                       },
           'boilerplate.footer_html' => {
                                          'text' => [
                                                      [
@@ -405,18 +535,6 @@ your password at the bottom of the form and press the Change Settings button.</i
                                          'args' => [
                                                      'footer_file'
                                                    ]
-                                       },
-          'responses.units_lecture' => {
-                                         'text' => [
-                                                     [
-                                                       'lit',
-                                                       'Your answer has the wrong units, so either you made a mistake in your algebra or you entered your answer incorrectly.
-A typical mistake would be to enter a+b/c+d when you really meant (a+b)/(c+d).
-Scroll down for more information on how to enter answers into Spotter.
-'
-                                                     ]
-                                                   ],
-                                         'args' => []
                                        },
           'user.password_form' => {
                                     'text' => [
@@ -512,6 +630,22 @@ You must have cookies enabled in your browser in order to log in.<p>
                                                 'not_me_url'
                                               ]
                                   },
+          'journal.instructions' => {
+                                      'text' => [
+                                                  [
+                                                    'lit',
+                                                    '<p>If you scroll down, first you\'ll see your current version of your text with all the formatting, and then below that you\'ll 
+see a window in which you can edit your text. To make a paragraph break, put in a blank line between the paragraphs. 
+To make a section heading, put the heading on a line by itself, with an equals sign, =, at the beginning of the line. 
+Subsection headings are made with a ==, and subsubsections with a ===. 
+To make a table of data, put a * at the beginning of each line.</p>
+<p>Your changes will not be saved until you click on the Save button! To avoid losing changes by mistake, you should make 
+a habit of saving your text very often as you work on it.</p>
+'
+                                                  ]
+                                                ],
+                                      'args' => []
+                                    },
           'boilerplate.asciimath_js_code' => {
                                                'text' => [
                                                            [
@@ -579,22 +713,69 @@ function format_variable_name(x) {
                                                          ],
                                                'args' => []
                                              },
-          'journal.instructions' => {
-                                      'text' => [
-                                                  [
-                                                    'lit',
-                                                    '<p>If you scroll down, first you\'ll see your current version of your text with all the formatting, and then below that you\'ll 
-see a window in which you can edit your text. To make a paragraph break, put in a blank line between the paragraphs. 
-To make a section heading, put the heading on a line by itself, with an equals sign, =, at the beginning of the line. 
-Subsection headings are made with a ==, and subsubsections with a ===. 
-To make a table of data, put a * at the beginning of each line.</p>
-<p>Your changes will not be saved until you click on the Save button! To avoid losing changes by mistake, you should make 
-a habit of saving your text very often as you work on it.</p>
+          'checker.how_to_enter_answers' => {
+                                              'text' => [
+                                                          [
+                                                            'lit',
+                                                            '    <h3>How to enter answers into Spotter</h3>
+    <h4>Numerical answers</h4>
+    <p>Enter the number. If there is a pop-up menu of units, select the
+    units in which your answer is expressed. Never
+    type in units; either select them from the menu or don\'t supply them at all.
+    Enter scientific
+    notation like this: <tt>3.0 10^8</tt> means 3.0x10<sup>8</sup>. 
+    </p>
+    <h4>Symbolic answers</h4>
+    <p>Examples:
+    <ul>
+        <table border="1" width="600">
+          <tr><td>ab (a multiplied by b)</td><td><tt>ab</tt></td></tr>
+          <tr><td> x<sup>2</sup> (x squared)    </td><td><tt> <tt>x^2</tt>  </tt></td></tr>
+          <tr><td> x<sub>2</sub> (name contains a subscript)    </td><td><tt> <tt>x2</tt>  </tt></td></tr>
+          <tr><td> square root of 2   </td><td><tt> sqrt(2)  </tt></td></tr>
+          <tr><td> sin x   </td><td><tt>  sin x </tt></td></tr>
+          <tr><td> sin<sup>-1</sup> x   </td><td><tt> asin x  </tt></td></tr>
+          <tr><td> sin<sup>2</sup>x   </td><td><tt> (sin x)^2  </tt></td></tr>
+          <tr><td> sin 2x   </td><td><tt> sin(2x) (parentheses required)  </tt></td></tr>
+          <tr><td> <sup>a</sup>/<sub>bc</sub>   </td><td><tt> a/(bc) (parentheses required)  </tt></td></tr>
+          <tr><td> &pi;   </td><td><tt> pi (not 3.14) </tt></td></tr>
+          <tr><td> e<sup>x</sup>   </td><td><tt> e^x </tt></td></tr>
+<!--          <tr><td> <math  xmlns="http://www.w3.org/1998/Math/MathML"><mfrac><mrow><mi>a</mi><mo>+</mo><mi>b</mi></mrow><mrow><mi>c</mi><mo>+</mo><mi>d</mi></mrow></mfrac></math>   </td><td><tt> e^x </tt></td></tr> -->
+          <tr><td>
+           <table><tr><td>a+b</td></tr><tr><td><pre>---</pre></td></tr></tr><td>c+d</td></tr></table> 
+          </td><td><tt> (a+b)/(c+d) (parentheses required) </tt></td></tr>
+          <tr><td> sin <sup>a</sup>/<sub>bc</sub>   </td><td><tt> sin[a/(bc)]<br/> (using (), [], and {} makes it easier<br/>for you to see what you\'re doing)  </tt></td></tr>
+        </table>
+    </ul>
+    </p>
+    <p>
+    Spotter only checks whether your answer is <i>numerically</i> equal to the answer the
+    instructor put in previously. It doesn\'t check whether it is in the right
+    <i>form</i>. It doesn\'t know whether a symbolic answer has been simplified
+    as much as possible, and it doesn\'t know whether a numerical answer has the
+    right number of significant figures. It\'s your responsibility to check these things;
+    don\'t try to blame it on the software if you get them wrong!
+    </p>
+    <p>
+    For more details, you can download the documentation for Spotter 
+    <a href="http://www.lightandmatter.com/spotter/spotter.html">here</a>.
+    </p>
 '
-                                                  ]
-                                                ],
-                                      'args' => []
-                                    },
+                                                          ]
+                                                        ],
+                                              'args' => []
+                                            },
+          'checker.no_equals_sign_in_answers' => {
+                                                   'text' => [
+                                                               [
+                                                                 'lit',
+                                                                 '   <p>You don\'t need to type in an equation, just an expression. Everything
+   to the left of the equals sign has been disregarded.</p>
+'
+                                                               ]
+                                                             ],
+                                                   'args' => []
+                                                 },
           'checker.explain_mathml' => {
                                         'text' => [
                                                     [
