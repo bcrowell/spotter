@@ -161,12 +161,12 @@ so that you have privileges.
 There is some stuff near the top of the file \verb@Makefile@ that is set appropriately
 for the Apache web server running on Debian or Ubuntu linux, but may need to be changed
 for other web servers or operating systems.
-%
+
 \verb@CGI_GENERAL = /usr/lib/cgi-bin@ should be the cgi-bin on your machine (e.g.,
 \verb@/Library/WebServer/CGI-Executables@ on MacOS). 
-%
+
 \verb@WEB_SERVER_GROUP = www-data@ should be the group that your web server runs in.
-%
+
 \verb@WEB_SERVER_DATA = /var/www@ should be the directory where your web server stores the documents it serves.
 
 Do the command \verb@make install@.
@@ -176,7 +176,8 @@ The sample answer file \verb@sample.xml@ will have been automatically placed in
 place.
 
 \mysubsection{libraries}
-You need to install the perl libraries XML::Parser, XML::Simple, and JSON.
+You need to install the perl libraries XML::Parser, XML::Simple, JSON, CGI::Application,
+and CGI::Application::Plugin::Authentication.
 On Debian or Ubuntu Linux, you can do this with the command \verb@make depend@.
 
 On other systems, use that system's software packaging system.
@@ -854,7 +855,7 @@ to give students access to their grade reports via the web. My OpenGrade
 grade-recording software is designed to interface with Spotter through this
 kind of directory tree. From the OpenGrade client software, you 
 can post grade reports to the server, and you can also download information
-about the students' answers. You only need to create the \verb@cgi-bin/spotter@
+about the students' answers. You only need to create the \verb@cgi-bin/spotter3@
 directory manually. Everything below that level can be set up using the
 \verb@admin_spotter@ script, as described later in this section.
 
@@ -1016,11 +1017,13 @@ own version in her own directory.
 
 \mysubsection{setting up}
 Here's a summary of what you have to do to set up the file tree from scratch.
-First, create the \verb@cgi-bin/spotter@ directory,
-and do \verb@chmod ug+rw@ on it.
-Make sure that the Apache web server (typically user \verb@www@)
+First, create the \verb@cgi-bin/spotter3@ directory if it doesn't already exist,
+and do \verb@chmod ug+rw@ on it. Do the same for the subdirectory
+\verb@cgi-bin/spotter3/data.@
+
+Make sure that the Apache web server (typically user \verb@www@ or \verb@www-data@)
 is in the group that owns the directories, so that it can read and write the
-files in them.
+files in them. Add yourself to this group by editing \verb@/etc/group@.
 
 Run the \verb@admin_spotter@ script, and use the ``ai''
 command to create the instructors' directories and info files.
@@ -1044,9 +1047,16 @@ The students will be getting into Spotter from the class's web page, which shoul
 have a link that looks something like this:
 
 \verb@Click@\\
-\verb@<a href="cgi-bin/Spotter.cgi?file=lm&login=form&what=check&class=bcrowell/s2003/206">@\\
+\verb@<a href="cgi-bin/spotter3/Spotter.cgi?file=lm&login=form&what=check&@\\
+\verb@class=bcrowell/s2003/206">@\\
 \verb@here</a> to check your answers with Spotter or to check@\\
 \verb@your current grade in the class.@
+
+If you're testing this on your desktop machine, using the sample answer file,
+the url would be something like this:
+
+\verb@http://localhost/cgi-bin/spotter3/Spotter.cgi?what=check&@\\
+\verb@file=sample&login=form&class=bcrowell/s2003/206@
 
 If you have users who don't know anything about Linux, the easiest
 way to give them control over their classes is by

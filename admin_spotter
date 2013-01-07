@@ -9,10 +9,20 @@ use Cwd;
 use JSON 2.0;
 use strict;
 
-my $user = getlogin();
+my $user = getlogin()  || (scalar getpwuid($<)) || `whoami`; 
+        # for some reason getlogin() fails in ubuntu; http://perlmonks.org/?node_id=1011924
+$user =~ s/\n$//;
 
-my $spotter_root_dir = "/usr/lib/cgi-bin/spotter";
-if (!-e $spotter_root_dir) {die "Directory $spotter_root_dir does not exist"}
+if (!($user=~/\w/)) {die "unable to detect username"}
+
+my $spotter2_root_dir = "/usr/lib/cgi-bin/spotter";
+my $spotter3_root_dir = "/usr/lib/cgi-bin/spotter3/data";
+my $spotter_root_dir = $spotter3_root_dir;
+if (!-e $spotter3_root_dir && -e $spotter2_root_dir) {$spotter_root_dir = $spotter2_root_dir}
+if (-e $spotter3_root_dir && -e $spotter2_root_dir) {
+  print "Warning: Both Spotter 2.x and Spotter 3.x are detected. We're using the 3.x data.\n";
+}
+if (!-e $spotter2_root_dir && !-e $spotter3_root_dir) {die "Directory $spotter3_root_dir does not exist"}
 my $server_group = get_group($spotter_root_dir); # e.g., apache or www
 if (!$server_group) {die "Error getting group ID of file $spotter_root_dir"}
 
@@ -21,6 +31,15 @@ my $class = {};
 print "Spotter's data is in the directory $spotter_root_dir, owned by the group $server_group.\n";
 if ($server_group eq getlogin()) {print "WARNING: The group of should be the group that apache runs under, but instead it appears to be your own group.\n"}
 if ($server_group ne 'www' and $server_group ne 'apache' and $server_group ne 'www-data') {print "WARNING: The group should be the group that apache runs under, which is typically www or apache or www-data, but it does not appear to be any of those.\n"}
+
+if (! -w $spotter_root_dir ) {
+  print "Error: the directory $spotter_root_dir is not writeable by you. Typically this directory should be\n";
+  print "owned by you, and its group should be $server_group. It needs to be writeable by both you and $server_group.\n";
+  print "To accomplish this, you can log in as root and do the following:\n";
+  print "  chown $user $spotter_root_dir && chmod o+w $spotter_root_dir\n";
+  print "  chgrp $server_group $spotter_root_dir && chmod g+w $spotter_root_dir\n";
+  die;
+}
 
 while (1) {
 
@@ -732,7 +751,9 @@ sub set_group {
   }
   my $groups_i_am_in = `groups`;
   my $q = quotemeta $group;
-  unless ($groups_i_am_in =~ /$group/) {die "You need to be a member of group $group in order to do this. The command groups tells you what groups you're a member of. To add yourself to a group, edit /etc/group, log out, and log back in."}
+  unless ($groups_i_am_in =~ /$group/) {
+    die "Attempted to set group of $file to $group. You need to be a member of group $group in order to do this. The command groups tells you what groups you're a member of. To add yourself to a group, edit /etc/group, log out, and log back in."
+  }
   my $cmd = "chgrp $group $file";
   system("$cmd");
   my $err = $!;

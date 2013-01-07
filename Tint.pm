@@ -431,7 +431,7 @@ Scroll down for more information on how to enter answers into Spotter.
                                                 [
                                                   'lit',
                                                   '">
-  <input type="hidden" name="username" value="'
+  <input type="hidden" name="authen_username" value="'
                                                 ],
                                                 [
                                                   'ref',
@@ -449,6 +449,16 @@ Scroll down for more information on how to enter answers into Spotter.
                                                 [
                                                   'lit',
                                                   '">
+  <input type="hidden" name="destination" value="'
+                                                ],
+                                                [
+                                                  'ref',
+                                                  'url_with_semicolons'
+                                                ],
+                                                [
+                                                  'lit',
+                                                  '" />
+  <input type="hidden" name="rm" value="authen_login" />
   '
                                                 ],
                                                 [
@@ -458,7 +468,7 @@ Scroll down for more information on how to enter answers into Spotter.
                                                 [
                                                   'lit',
                                                   '
-    <input type="password" name="password" size="20" maxlength="20"><br>
+    <input type="password" name="authen_password" size="20" maxlength="20"><br>
   '
                                                 ],
                                                 [
@@ -495,6 +505,7 @@ You must have cookies enabled in your browser in order to log in.<p>
                                                 'url',
                                                 'username',
                                                 'date',
+                                                'url_with_semicolons',
                                                 'prompt',
                                                 'activation',
                                                 'real_name',

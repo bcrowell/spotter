@@ -9,12 +9,26 @@ how to set a new password.<br>
 </form>
 __html__
 
+--Some of the following is based on what the CGI::Application::Plugin::Authentication does:
+--"If you plan to create your own login page, I would recommend that you start with the HTML code for the default login
+--page, so that your login page will contain the correct form fields and hidden fields."
+-- The hidden form fields are:
+--  destination
+--    <input type="hidden" name="destination" value="http://localhost/cgi-bin/spotter3/Spotter.cgi?what=check;file=sample;class=bcrowell%2Fs2013%2F100;login=form;username=doe_john" />
+--      (note all &'s changed to ;)
+--      ... destination_url
+--  rm
+-- The other fields it wants are:
+--   authen_password (changed from my password)
+--   authen_username (changed from my username)
 password_form = <<__html__
 <form method="POST" action="$url">
-  <input type="hidden" name="username" value="$username">
+  <input type="hidden" name="authen_username" value="$username">
   <input type="hidden" name="date" value="$date">
+  <input type="hidden" name="destination" value="$url_with_semicolons" />
+  <input type="hidden" name="rm" value="authen_login" />
   $prompt
-    <input type="password" name="password" size="20" maxlength="20"><br>
+    <input type="password" name="authen_password" size="20" maxlength="20"><br>
   $activation
   <input type="submit" value="Log in.">
 </form>

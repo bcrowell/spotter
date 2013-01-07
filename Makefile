@@ -12,10 +12,6 @@ JS = $(WEB_SERVER_DATA)/spotter_js/$(VERSION)
 NEW_TINT = /home/bcrowell/Documents/programming/tint/tint
    # ... on my own system, this is the newest version; always update to this version
 
-doc:
-	pdflatex doc
-	pdflatex doc
-
 s:
 	touch strings/* tint
 	make Tint.pm
@@ -38,7 +34,7 @@ install: Tint.pm
 
 depend:
 	# The following is for debian, ubuntu, etc.:
-	apt-get install libxml-parser-perl libxml-simple-perl libdigest-sha-perl libjson-perl libmail-sendmail-perl
+	apt-get install libxml-parser-perl libxml-simple-perl libdigest-sha-perl libjson-perl libmail-sendmail-perl libcgi-application-plugin-authentication-perl
 
 clean:
 	rm -f doc.log
