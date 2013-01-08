@@ -115,6 +115,16 @@ the class to have access to this e-mail address.<br>
                                                       ],
                                             'args' => []
                                           },
+          'user.blank_password' => {
+                                     'text' => [
+                                                 [
+                                                   'lit',
+                                                   'You didn\'t enter a password. Please use the back button in your browser and try again.
+'
+                                                 ]
+                                               ],
+                                     'args' => []
+                                   },
           'responses.sig_fig_lecture' => {
                                            'text' => [
                                                        [
@@ -141,6 +151,16 @@ I can\'t calculate the time it takes to hit the ground to 6 sig figs, because at
                                                        'raw_input'
                                                      ]
                                          },
+          'user.not_same_password_twice' => {
+                                              'text' => [
+                                                          [
+                                                            'lit',
+                                                            'You didn\'t type the same password twice. Please use the back button in your browser and try again.
+'
+                                                          ]
+                                                        ],
+                                              'args' => []
+                                            },
           'checker.explain_answer_list' => {
                                              'text' => [
                                                          [
@@ -558,25 +578,15 @@ Scroll down for more information on how to enter answers into Spotter.
                                                 [
                                                   'lit',
                                                   '">
-  <input type="hidden" name="date" value="'
-                                                ],
-                                                [
-                                                  'ref',
-                                                  'date'
-                                                ],
-                                                [
-                                                  'lit',
-                                                  '">
   <input type="hidden" name="destination" value="'
                                                 ],
                                                 [
                                                   'ref',
-                                                  'url_with_semicolons'
+                                                  'url'
                                                 ],
                                                 [
                                                   'lit',
                                                   '" />
-  <input type="hidden" name="rm" value="authen_login" />
   '
                                                 ],
                                                 [
@@ -621,8 +631,7 @@ If you\'re not '
                                     'args' => [
                                                 'url',
                                                 'username',
-                                                'date',
-                                                'url_with_semicolons',
+                                                'url',
                                                 'prompt',
                                                 'activation',
                                                 'real_name',

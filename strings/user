@@ -13,20 +13,16 @@ __html__
 --"If you plan to create your own login page, I would recommend that you start with the HTML code for the default login
 --page, so that your login page will contain the correct form fields and hidden fields."
 -- The hidden form fields are:
---  destination
---    <input type="hidden" name="destination" value="http://localhost/cgi-bin/spotter3/Spotter.cgi?what=check;file=sample;class=bcrowell%2Fs2013%2F100;login=form;username=doe_john" />
---      (note all &'s changed to ;)
---      ... destination_url
---  rm
+--  destination (the url we're going to)
+--  some more that don't seem to matter
 -- The other fields it wants are:
 --   authen_password (changed from my password)
 --   authen_username (changed from my username)
+
 password_form = <<__html__
 <form method="POST" action="$url">
   <input type="hidden" name="authen_username" value="$username">
-  <input type="hidden" name="date" value="$date">
-  <input type="hidden" name="destination" value="$url_with_semicolons" />
-  <input type="hidden" name="rm" value="authen_login" />
+  <input type="hidden" name="destination" value="$url" />
   $prompt
     <input type="password" name="authen_password" size="20" maxlength="20"><br>
   $activation
@@ -48,4 +44,12 @@ Nobody outside of the class will know this address.</i><br>
 <input type="text" name="email" size="50" maxlength="50"><br>
 <input type="checkbox" name="emailpublic" checked value="public"> Leave this box checked if you want other students in 
 the class to have access to this e-mail address.<br>
+__html__
+
+not_same_password_twice=<<__html__
+You didn't type the same password twice. Please use the back button in your browser and try again.
+__html__
+
+blank_password=<<__html__
+You didn't enter a password. Please use the back button in your browser and try again.
 __html__
