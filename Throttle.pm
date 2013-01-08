@@ -1,4 +1,113 @@
 use strict;
+require "Util.pm";
+
+=head2 Throttle.pm
+
+This module handles two somewhat related tasks: (1) Protect against a denial of service attack, or patterns of
+use that have the same effect as one. (2) Keep track of how frequently a particular student has been checking
+answers, and don't let them do arbitrarily many guesses in an arbitrarily short time.
+
+=cut
+
+use JSON 2.0;
+
+=head3 shut_out_evil_ip()
+
+Fighting against DOS attacks, spambots, etc.:
+
+The file dos_log contains the following:
+   ip address of most recent user
+   list of all the times that that user has used Spotter
+The file blocked_<date> contains a list of ip addresses that are blocked for the day.
+If being attacked systematically, can set apache's httpd.conf file to deny access to
+an ip address or a range of ip addresses; see http://httpd.apache.org/docs/2.0/howto/auth.html .
+Basically you put something like "Deny from 85.91" at the end of the 'Directory "/usr/local/www/cgi-bin"' section.
+The apache mechanism is effective against a range of IP addresses, whereas the stuff built into Spotter
+below only works against an attack from a single address.
+
+In cases where it's appropriate, this routine silently calls exit().
+=cut
+
+sub shut_out_evil_ip {
+  my $throttle_dir = shift;
+  my $date_string = shift;
+  my $ip = shift;
+  my $debug = shift; # string ref
+
+  # The following is not really necessary, since it's better to do it from within the apache config file,
+  # but it can't hurt, and this mechanism may be useful, e.g., for people who don't have permission to
+  # alter their apache config files:
+
+  my $x = get_config("block_ip_ranges");
+  # $$debug = $$debug . "read config file\n";
+  if (defined $x) {
+    foreach my $range(@$x) {
+      $range = quotemeta($range);
+      if ($ip=~m/^$range/) {exit(0)}
+    }
+  }
+
+  my $dos_settings = get_config("dos");
+  if (!defined $dos_settings) {die "error reading dos from config.json"}
+  my $time_window = $dos_settings->{"time_window"}; # seconds
+  my $max_accesses = $dos_settings->{"max_accesses"}; 
+   # maximum of this many accesses within time window; note that multiple users behind the same router/hub can appear as the same ip;
+   # I found empirically that setting $max_accesses to 20 and $time_window to 60 caused my own students to be blocked on the first
+   # day of class when they were all initializing their accounts from behind the same router.
+  my $accesses_to_sleep = $dos_settings->{"accesses_to_sleep"};
+   # If this many, then delay response by $sleep_time, so real users won't be likely to get blacklisted.
+  my $sleep_time = $dos_settings->{"sleep_time"}; # seconds
+  my $immune_ip_range = quotemeta($dos_settings->{"immune_ip_range"}); # don't block your own school
+
+  $$debug = $$debug . "dos settings$time_window,$max_accesses,$accesses_to_sleep,$sleep_time,$immune_ip_range";
+
+my $blocked_file_name = "$throttle_dir/blocked_$date_string";
+my $dos_log = "$throttle_dir/dos_log";
+my $now = time;
+if (open(FILE,"<$blocked_file_name")) {
+  while (my $line=<FILE>) {
+    if ($line=~m/$ip/) {exit(0)}
+  }
+  close(FILE);
+}
+my $last_ip = '';
+if (open(FILE,"<$dos_log")) {
+  my $line = <FILE>;
+  chomp $line;
+  $last_ip = $line;
+  close(FILE);
+}
+if ($ip eq $last_ip) {
+  if (open(FILE,">>$dos_log")) {
+    print FILE "$now\n";
+    close(FILE);
+  }
+  if (open(FILE,"<$dos_log")) {
+    my $line = <FILE>;
+    chomp $line; # skip ip, which we already know
+    my $accesses = 0;
+    while (my $t=<FILE>) {
+      chomp $t;
+      ++$accesses if ($now-$t<$time_window);
+    }
+    close(FILE);
+    if ($accesses>$max_accesses && !($ip =~ /^$immune_ip_range/)) { # don't block your own school
+      if (open(FILE,">>$blocked_file_name")) { # This ip isn't already in there, or we would have quit earlier.
+        print FILE "$ip\n";
+        close(FILE);
+      }
+    }
+    if ($accesses>$accesses_to_sleep) {sleep $sleep_time}
+  }
+} # end if same as last ip
+else { # not the same as last ip
+  if (open(FILE,">$dos_log")) {
+    print FILE "$ip\n$now\n";
+    close(FILE);
+  }
+} # end if not same as last ip
+
+}
 
 sub throttle_file_name {
             my $throttle_dir = shift;

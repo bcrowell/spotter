@@ -33,8 +33,8 @@ sub HTTPHeader {
 
 sub HeaderHTML
 {
-  my ($spotter_js_dir) = @_; # title not actually used
-  return tint('boilerplate.header_html','homepath'=>$homepath,'spotter_js_dir'=>$spotter_js_dir)
+  my ($spotter_js_dir) = @_;
+  return tint('boilerplate.header_html','homepath'=>$homepath,'spotter_js_dir'=>$spotter_js_dir,'title'=>'Spotter')
 } 
 
 sub activate_debugging_output {

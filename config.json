@@ -1,1 +1,11 @@
-{"language":"en"}
+{
+  "language":"en",
+  "block_ip_ranges":["85.91"],
+  "dos":{
+    "time_window":60,
+    "max_accesses":60,
+    "accesses_to_sleep":10,
+    "sleep_time":10,
+    "immune_ip_range":"207.233"
+  }
+}

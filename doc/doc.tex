@@ -169,6 +169,15 @@ for other web servers or operating systems.
 
 \verb@WEB_SERVER_DATA = /var/www@ should be the directory where your web server stores the documents it serves.
 
+The file \verb@config.json@ contains a variety of configuration parameters. The two that are most
+likely to be of interest are \verb@language@ (set to English, en, by default) and
+\verb@immune_ip_range@, which specifies a block of IP addresses for your own school,
+which will never be blocked from accessing Spotter even if an excessive number of
+requests is received within a short time. For example, the unix command
+\verb@dig +short fullcoll.edu@ tells me that my school's web site is
+at \verb@207.233.83.8@, so I set \verb@immune_ip_range@ to \verb@207.233@,
+which should cover any machines on my campus.
+
 Do the command \verb@make install@.
 
 The sample answer file \verb@sample.xml@ will have been automatically placed in
