@@ -3,9 +3,9 @@ forgot_password = <<__html__
 If you've forgotten your password, enter your student ID number and click on this button. Information will be e-mailed to you about 
 how to set a new password.<br>
 <form method="POST" action="$url">
-  Student ID: <input type="hidden" name="username" value="$username">';
-  <input type="text" name="id" size="10"> ';
-  <input type="submit" value="Send e-mail.">';
+  Student ID: <input type="hidden" name="username" value="$username">
+  <input type="text" name="id" size="10"> 
+  <input type="submit" value="Send e-mail.">
 </form>
 __html__
 

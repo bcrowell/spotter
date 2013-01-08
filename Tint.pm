@@ -240,9 +240,9 @@ how to set a new password.<br>
                                                   ],
                                                   [
                                                     'lit',
-                                                    '">\';
-  <input type="text" name="id" size="10"> \';
-  <input type="submit" value="Send e-mail.">\';
+                                                    '">
+  <input type="text" name="id" size="10"> 
+  <input type="submit" value="Send e-mail.">
 </form>
 '
                                                   ]
