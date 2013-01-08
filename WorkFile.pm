@@ -214,7 +214,7 @@ sub queries_are_alike {
 
 sub filter_crap_from_query {
   my $a = shift;
-  my $crap = "class|username|correct|book";
+  my $crap = "class|username|correct|book|sid";
   $a =~ s/($crap)=[\w\d\/]+\&//g;
   $a =~ s/\&($crap)=[\w\d\/]+//g;
   return $a;

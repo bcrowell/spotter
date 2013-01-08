@@ -300,7 +300,7 @@ sub top_of_page {
 }
 
 sub bottom_of_page {
-  my ($out,$tree);
+  my ($out,$tree) = @_;
   $out = $out .  "<p>time: ".current_date_string()." CST</p>\n";
   $out = $out .  SpotterHTMLUtil::accumulated_debugging_output();
   $out = $out .  SpotterHTMLUtil::FooterHTML($tree);
@@ -1377,6 +1377,7 @@ sub record_work {
   if ($file eq '') {return 'Error finding student work file, probably because class= was not set in the url that pointed to Spotter'}
   my $query = $args{QUERY}; # the following 4 lines are duplicated elsewhere in the code
   $query =~ s/username=[^\&]*\&?//;
+  $query =~ s/sid=[^\&]*\&?//;
   $query =~ s/class=[^\&]*\&?//;
   $query =~ s/what=check\&?//;
   $query =~ s/amp=\&?//;
