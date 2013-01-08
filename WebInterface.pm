@@ -1513,6 +1513,7 @@ sub jsify {
     },
   );
 
+  -e $xmlfile or return [1,"file $xmlfile not found"]; # happens if they're just using it for grade reports, not answer checking
   $parser->parsefile($xmlfile);
 
   print JS <<STUFF;
