@@ -206,197 +206,182 @@ sub do_log_out {
 }
 
 #========================================================================================================
-# A nasty, brutish, and long subroutine that generates all the html output as its return value.
+# run_spotter()
+# Generates all the html output as its return value.
 #========================================================================================================
 
 sub run_spotter {
+  my $login = shift;
+  my $run_mode = shift;
+  my $need_cookies = shift;
+  my $session = shift; # CGI::Session object, http://search.cpan.org/~markstos/CGI-Session-4.48/lib/CGI/Session.pm
 
-my $login = shift;
-my $run_mode = shift;
-my $need_cookies = shift;
-my $session = shift; # CGI::Session object, http://search.cpan.org/~markstos/CGI-Session-4.48/lib/CGI/Session.pm
+  my $fatal_error = "";
+  my $date_string = current_date_string_no_time();
+  my $script_dir = Cwd::cwd();
 
-my $data_dir = data_dir();
-my $script_dir = Cwd::cwd();
+  my $data_dir = data_dir();
+  find_or_populate_data_dir($data_dir,$script_dir);
 
-if (!-e $data_dir) {die "The subdirectory '$data_dir' doesn't exist within the directory ${script_dir}. This should have been done by the makefile."}
-foreach my $data_subdir("cache","throttle","log") {
-  my $d = "$data_dir/$data_subdir";
-  if (!(-d $d)) {
-    mkdir $d or die "Error creating directory $d, $!";
-  }
-}
+  shut_out_evil_ip("$data_dir/throttle",$date_string,$ENV{REMOTE_ADDR},\$early_debug);
 
+  $SpotterHTMLUtil::cgi = new CGI;
+  my $out = ''; # accumulate all the html code to be printed out
 
+  my $language;
+  ($out,$fatal_error,$language) = get_language($out,$fatal_error); # for use in Tint; not currently implemented
 
-my $throttle_dir = "$data_dir/throttle";
-my $date_string = current_date_string_no_time();
-my $ip = $ENV{REMOTE_ADDR};
+  my $tree = tree();
 
-shut_out_evil_ip($throttle_dir,$date_string,$ip,\$early_debug);
+  my ($basic_file_name,$xmlfile) = find_answer_file_and_set_up_log($data_dir);
 
-#----------------------------------------------------------------
-# Initialization
-#----------------------------------------------------------------
-$SpotterHTMLUtil::cgi = new CGI;
-my $out = ''; # accumulate all the html code to be printed out
+  my $current_problem;
+  my $printed_any_problems_yet = 0;
 
-my $tree = tree();
+  if (0 || Url::par_set("debug")) {SpotterHTMLUtil::activate_debugging_output()}
+  renice_if_anonymous($login);
+  my $cache_parsed_xml;
+  ($out,$fatal_error,$cache_parsed_xml)
+         = top_of_page($out,$fatal_error,$spotter_js_dir,$tree,$data_dir,$basic_file_name,$xmlfile,$need_cookies);
+  debugging_stuff($early_debug,$tree,$xmlfile,$login,$session,$run_mode); # gets saved up for later
 
-our $basic_file_name = "spotter"; # default name of answer file
-if (Url::par_set("file")) {
-  $basic_file_name = Url::par("file");
-  $basic_file_name =~ s/[^\w\d_\-]//g; # don't allow ., because it risks allowing .. on a unix system
-}
-
-#----------------------------------------------------------------
-# Find the XML file.
-#----------------------------------------------------------------
-our $xmlfile = "answers/".$basic_file_name.".xml";
-
-if (-e $xmlfile) { # don't create foo.log if foo.xml doesn't exist
-  Log_file::set_name($basic_file_name,"log",$data_dir); # has side effect of creating log file, if necessary
-}
-
-if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"started")}
-
-my $current_problem;
-my $printed_any_problems_yet = 0;
-
-if (0 || Url::par_set("debug")) {SpotterHTMLUtil::activate_debugging_output()}
-
-#------------ lower priority for anonymous users ----------------------
-unless ($login->logged_in()) {
-  renice_myself(17)
-}
-  # Note that calls to nice() are cumulative.
-  # It's not necessarily a good idea to do this any earlier in the program, because if we're going to terminate for some other reason,
-  # it's better to get that done, and get the process off the system.
-
-#----------------------------------------------------------------
-# Contents of page.
-#----------------------------------------------------------------
-
-$out = $out .  SpotterHTMLUtil::HeaderHTML($spotter_js_dir);
-
-#----------------------------------------------------------------
-# javascript embedded in the page
-#----------------------------------------------------------------
-# Cache a js version for use on the client side.
-#--------------
-# optimization: use a simplified version of the xml file if that's all we need
-my $cache_dir = "$data_dir/cache"; # also in AnswerResponse
-my $js_cache = "$cache_dir/${basic_file_name}_js_cache.js";
-my $cache_parsed_xml = "$cache_dir/${basic_file_name}_parsed_xml.dump";
-#--- Write stuff to cache files, if cache files don't exist or are out of date:
-unless (-e $js_cache && modified($js_cache)>modified($xmlfile)) {
-  my $return_status = jsify($xmlfile,$js_cache);
-  if ($return_status->[0]>=2) {$out = $out .  "<p>".$return_status->[1]."</p>"}
-}
-#--------------
-if ($need_cookies) {
-  $out = $out . tint('check_if_cookies_enabled');
-  $out = $out . <<ALERT;
-    <script type="text/javascript">
-      if (!test_cookies_enabled()) {alert("You will not be able to log in, because cookies are disabled in your browser.");}
-    </script>
-ALERT
-}
-#----------------------------------------------------------------
-# Top of page.
-#----------------------------------------------------------------
-
-$out = $out .  SpotterHTMLUtil::BannerHTML($tree);
-$out = $out .  SpotterHTMLUtil::asciimath_js_code();
-$out = $out .  "<script>\n".read_whole_file($js_cache)."\n</script>\n";
-
-$early_debug =~ s/\n/<p>/g;
-SpotterHTMLUtil::debugging_output("early_debug=".$early_debug);
-SpotterHTMLUtil::debugging_output("The referrer is ".$session->param('referer'));
-SpotterHTMLUtil::debugging_output("The log file is ".Log_file::get_name());
-SpotterHTMLUtil::debugging_output("The xml file is ".$xmlfile);
-
-SpotterHTMLUtil::debugging_output("Logged in: ".$login->logged_in());
-SpotterHTMLUtil::debugging_output("Username: ".$login->username());
-SpotterHTMLUtil::debugging_output("run_mode: ".$run_mode);
-SpotterHTMLUtil::debugging_output("url::par(login): ".Url::par("login"));
-
-SpotterHTMLUtil::debugging_output("class_err=".$tree->class_err());
-SpotterHTMLUtil::debugging_output("class_description=".$tree->class_description());
-
-SpotterHTMLUtil::debugging_output("priority=".getpriority(0,0));
-
-my $fatal_error = "";
-
-my $language = get_config("language");
-if (!defined $language) {$fatal_error = "Error reading configuration file config.json, or it didn't define language."}
-
-if (! -e $js_cache) {
-  sleep 10; # maybe someone else is creating it right now
-  if (! -e $js_cache) {$fatal_error = "file '$js_cache' does not exist, could not be created, and was not created by another process within 10 seconds"}
-}
-
-  if ($login->logged_in()) { 
-    my $result = fiddle_with_account_settings($tree,$login->username());
-    my $severity = $result->[0];
-    my $message = $result->[1];
-    if ($severity>=1) {
-      if ($severity>=2) {
-        $fatal_error = $message;
-      }
-      else {
-        $out = $out . "<p>$message</p>";
-      }
-    }
-  }
-#----------------------------------------------------------------
-# Body.
-#----------------------------------------------------------------
-
+  ($out,$fatal_error) = do_fiddle_with_account_settings($out,$fatal_error,$login,$tree);
   if ($tree->class_description()) {$out = $out .  $tree->class_description()."<br>\n"}
-
-
   $out = show_messages($out,$tree,$login);
   $out = show_functions($out,$tree,$login);
-
-
-
-  if ($login->logged_in() && $tree->class_err()) {
-    $out = $out .  "<p><b>Error: ".$tree->class_err()."</b></p>\n";
-  }
-
-
-  ($out,$fatal_error) = do_function($out,$fatal_error,$tree,$login,$session,$xmlfile,$cache_parsed_xml,$data_dir,$run_mode);
+  $out = show_errors($out,$fatal_error,$tree,$login,$session,$xmlfile,$cache_parsed_xml,$data_dir,$run_mode);
 
   $out = $out .  toc_js_code(Url::param_hash()); # Fills in the <div> generated by toc_div(). See note in TODO.
 
-#---------------------------------------------------------
-# Footer.
-#---------------------------------------------------------
+  $out = bottom_of_page($out,$tree); # date, debugging output, footer
 
-if ($fatal_error) {
-  $out = $out .  "<p>Error: $fatal_error</p>\n";
+  if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"done writing html output")}
+
+  if ($run_mode eq 'do_log_out' || $run_mode eq 'public_anonymous_use') {$session->delete()}
+
+  $session->flush();
+
+  return $out; # all the html that has been accumulated above.
+
+} # end of run_spotter
+
+sub show_errors {
+  my ($out,$fatal_error,$tree,$login,$session,$xmlfile,$cache_parsed_xml,$data_dir,$run_mode) = @_;
+  if ($login->logged_in() && $tree->class_err()) { $out = $out .  "<p><b>Error: ".$tree->class_err()."</b></p>\n";  }
+  ($out,$fatal_error) = do_function($out,$fatal_error,$tree,$login,$session,$xmlfile,$cache_parsed_xml,$data_dir,$run_mode);
+  if ($fatal_error) {  $out = $out .  "<p>Error: $fatal_error</p>\n"; }
+  return $out; 
 }
 
-$out = $out .  "<p>time: ".current_date_string()." CST</p>\n";
+sub debugging_stuff {
+  my ($early_debug,$tree,$xmlfile,$login,$session,$run_mode) = @_;
+  $early_debug =~ s/\n/<p>/g;
+  SpotterHTMLUtil::debugging_output("early_debug=".$early_debug);
+  SpotterHTMLUtil::debugging_output("The referrer is ".$session->param('referer'));
+  SpotterHTMLUtil::debugging_output("The log file is ".Log_file::get_name());
+  SpotterHTMLUtil::debugging_output("The xml file is ".$xmlfile);
+  SpotterHTMLUtil::debugging_output("Logged in: ".$login->logged_in());
+  SpotterHTMLUtil::debugging_output("Username: ".$login->username());
+  SpotterHTMLUtil::debugging_output("run_mode: ".$run_mode);
+  SpotterHTMLUtil::debugging_output("url::par(login): ".Url::par("login"));
+  SpotterHTMLUtil::debugging_output("class_err=".$tree->class_err());
+  SpotterHTMLUtil::debugging_output("class_description=".$tree->class_description());
+  SpotterHTMLUtil::debugging_output("priority=".getpriority(0,0));
+}
 
-$out = $out .  SpotterHTMLUtil::accumulated_debugging_output();
+sub top_of_page {
+  my ($out,$fatal_error,$spotter_js_dir,$tree,$data_dir,$basic_file_name,$xmlfile,$need_cookies) = @_;
+  $out = $out .  SpotterHTMLUtil::HeaderHTML($spotter_js_dir)
+              .  SpotterHTMLUtil::BannerHTML($tree)
+              .  SpotterHTMLUtil::asciimath_js_code();
+  my $cache_parsed_xml;
+  ($out,$fatal_error,$cache_parsed_xml) = embedded_js($out,$fatal_error,$data_dir,$basic_file_name,$xmlfile,$need_cookies);
+  return ($out,$fatal_error,$cache_parsed_xml);
+}
 
-$out = $out .  SpotterHTMLUtil::FooterHTML($tree);
+sub bottom_of_page {
+  my ($out,$tree);
+  $out = $out .  "<p>time: ".current_date_string()." CST</p>\n";
+  $out = $out .  SpotterHTMLUtil::accumulated_debugging_output();
+  $out = $out .  SpotterHTMLUtil::FooterHTML($tree);
+  return $out;
+}
 
-if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"done writing html output")}
+#----------------------------------------------------------------
+# Cache a js version for use on the client side.
+# optimization: use a simplified version of the xml file if that's all we need
+#----------------------------------------------------------------
+sub embedded_js {
+  my ($out,$fatal_error,$data_dir,$basic_file_name,$xmlfile,$need_cookies) = @_;
 
+  my $cache_dir = "$data_dir/cache"; # also in AnswerResponse
+  my $js_cache = "$cache_dir/${basic_file_name}_js_cache.js";
+  my $cache_parsed_xml = "$cache_dir/${basic_file_name}_parsed_xml.dump";
+  #--- Write stuff to cache files, if cache files don't exist or are out of date:
+  unless (-e $js_cache && modified($js_cache)>modified($xmlfile)) {
+    my $return_status = jsify($xmlfile,$js_cache);
+    if ($return_status->[0]>=2) {$out = $out .  "<p>".$return_status->[1]."</p>"}
+  }
+  #--------------
+  if ($need_cookies) {
+    $out = $out . tint('check_if_cookies_enabled');
+    $out = $out . <<ALERT;
+      <script type="text/javascript">
+        if (!test_cookies_enabled()) {alert("You will not be able to log in, because cookies are disabled in your browser.");}
+      </script>
+ALERT
+  }
+  if (! -e $js_cache) {
+    sleep 10; # maybe someone else is creating it right now
+    if (! -e $js_cache) {$fatal_error = "file '$js_cache' does not exist, could not be created, and was not created by another process within 10 seconds"}
+  }
+  $out = $out .  "<script>\n".read_whole_file($js_cache)."\n</script>\n";
+  return ($out,$fatal_error,$cache_parsed_xml);
+}
 
-#--------------------------------------------------------------------------------------------------
+sub get_language {
+  my ($out,$fatal_error) = @_;
+  my $language = get_config("language");
+  if (!defined $language) {$fatal_error = "Error reading configuration file config.json, or it didn't define language."}
+  return ($out,$fatal_error,$language);
+}
 
-if ($run_mode eq 'do_log_out' || $run_mode eq 'public_anonymous_use') {$session->delete()}
+sub renice_if_anonymous {
+  my $login = shift;
+  unless ($login->logged_in()) {
+    renice_myself(17)
+  }
+  # Note that calls to nice() are cumulative.
+  # It's not necessarily a good idea to do this any earlier in the program, because if we're going to terminate for some other reason,
+  # it's better to get that done, and get the process off the system.
+}
 
-$session->flush(); # fixme
+sub find_answer_file_and_set_up_log {
+  my $data_dir = shift;
+  my $basic_file_name = "spotter"; # default name of answer file
+  if (Url::par_set("file")) {
+    $basic_file_name = Url::par("file");
+    $basic_file_name =~ s/[^\w\d_\-]//g; # don't allow ., because it risks allowing .. on a unix system
+  }
+  our $xmlfile = "answers/".$basic_file_name.".xml";
+  if (-e $xmlfile) { # don't create foo.log if foo.xml doesn't exist
+    Log_file::set_name($basic_file_name,"log",$data_dir); # has side effect of creating log file, if necessary
+  }
+  if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"started")}
+  return ($basic_file_name,$xmlfile);
+}
 
-return $out; # all the html that has been accumulated above.
-
-#--------------------------------------------------------------------------------------------------
-} # end of run_spotter
+sub find_or_populate_data_dir {
+  my $data_dir = shift;
+  my $script_dir = shift;
+  if (!-e $data_dir) {die "The subdirectory '$data_dir' doesn't exist within the directory ${script_dir}. This should have been done by the makefile."}
+  foreach my $data_subdir("cache","throttle","log") {
+    my $d = "$data_dir/$data_subdir";
+    if (!(-d $d)) {
+      mkdir $d or die "Error creating directory $d, $!";
+    }
+  }
+}
 
 sub show_functions {
   my $out = shift; # append onto this
@@ -643,6 +628,24 @@ sub show_messages {
 }
 
 #--------------------------------------------------------------------------------------------------
+
+sub do_fiddle_with_account_settings {
+  my ($out,$fatal_error,$login,$tree) = @_;
+  if ($login->logged_in()) { 
+    my $result = fiddle_with_account_settings($tree,$login->username());
+    my $severity = $result->[0];
+    my $message = $result->[1];
+    if ($severity>=1) {
+      if ($severity>=2) {
+        $fatal_error = $message;
+      }
+      else {
+        $out = $out . "<p>$message</p>";
+      }
+    }
+  }
+  return ($out,$fatal_error);
+}
 
 # We come here if the user is logged in. If necessary, we handle stuff here like changing their password or email.
 # Returns [0,''] normally, or [severity,error message] otherwise.
