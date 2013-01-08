@@ -157,7 +157,6 @@ sub throttle_ok {
             my $throttle_ok = 1;
             my $when_over;
             if (open(FILE,"<$throttle_file_name")) {
-              print "<p>opened file $throttle_file_name</p>\n" if $debug;
               my @times = ();
               while (my $line = <FILE>) {
                 chomp $line;
@@ -167,7 +166,6 @@ sub throttle_ok {
                   # from a time that lies in the future. However, I've seen cases where this subroutine exits with
                   # when_over > longest_interval_violated, which would only seem possible if that were the case.
                   push @times,$when_was;
-                  print "<p>found time $when_was</p>\n" if $debug;
                 }
               }
               close(FILE);

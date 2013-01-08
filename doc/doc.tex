@@ -181,15 +181,23 @@ which should cover any machines on my campus.
 Do the command \verb@make install@.
 
 The sample answer file \verb@sample.xml@ will have been automatically placed in
-\verb@/usr/lib/cgi-bin/answers@. Your own real answer files should go in the same
+\verb@/usr/lib/cgi-bin/spotter3/answers@. Your own real answer files should go in the same
 place.
 
 \mysubsection{libraries}
-You need to install the perl libraries XML::Parser, XML::Simple, JSON, CGI::Application, CGI::Session,
-and CGI::Application::Plugin::Authentication.
-On Debian or Ubuntu Linux, you can do this with the command \verb@make depend@.
+You need to install the following perl libraries:
 
-On other systems, use that system's software packaging system.
+XML::Parser XML::Simple JSON CGI::Application CGI::Session
+CGI::Application::Plugin::Authentication Data::Dumper
+
+On Debian or Ubuntu Linux, you can do this with the command \verb@make depend@.
+On a system such as debian stable with older packages, you may find that one or more of these is
+unavailable. In that case, do something like this:
+
+\verb@cpan CGI::Application::Plugin::Authentication@
+
+On other systems, use that system's software packaging system, or use cpan as
+in the example above.
 
 \mysubsection{the answer file and the log file}
 

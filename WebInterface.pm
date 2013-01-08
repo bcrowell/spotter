@@ -869,7 +869,7 @@ sub do_email {
         my $subject2 = $SpotterHTMLUtil::cgi->param('emailSubject');
         my $link = Url::link();
         my $body = $SpotterHTMLUtil::cgi->param('emailBody');
-        Email::send_email_from_student($username,$own_email,$own_name,Url::par("send_to"),$link,$body,
+        $out = $out . Email::send_email_from_student($username,$own_email,$own_name,Url::par("send_to"),$link,$body,
                $subject1,$subject2);
         return $out;
       }

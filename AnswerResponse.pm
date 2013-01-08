@@ -50,7 +50,6 @@ sub answer_response {
   my $debug = 0;
 
   if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"entered answer_response")}
-  if ($debug) {print "entering answer_response"}
 
   # Parse the units:
   for (my $i=0; $i<=$n_vbl; $i++) {
@@ -70,14 +69,12 @@ sub answer_response {
   # parse it all over again using the filter that goes with this canned
   # answer. However, we want to find out right away whether the student
   # made a syntax error.
-  if ($debug) {print "answer_response: starting initial error check<p>\n"}
   my $student_expression = Expression->new(EXPR=>$ans,OUTPUT_MODE=>"html",
 					VAR_NAMES=>\@vbl_list,UNITS_ALLOWED=>$units_allowed);
   my $parse_error = $student_expression->has_errors(PARSE_IT=>1);
   if ($parse_error) {
-    print $student_expression->format_errors();
+    $result = $result . $student_expression->format_errors();
   }
-  if ($debug) {print "answer_response: done with initial error check<p>\n"}
   if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"answer_response 200")}
 
   # In the following, the code for randomly generating values for the variables
@@ -102,12 +99,12 @@ sub answer_response {
     $parse_error = $student_expression->has_errors();
     if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"answer_response 230")}
     if ($parse_error) {
-      print $student_expression->format_errors();
+      $result = $result . $student_expression->format_errors();
     }
     if (ref($result) ne "" && ref($result) ne "Math::Complex" && ref($result) ne "Measurement") {
       $parse_error = 1;
-      print ref($result)."=";
-      print "Illegal variable or use of units. Your expression doesn't result in a number.<br/>";
+      $result = $result . ref($result)."=";
+      $result = $result . "Illegal variable or use of units. Your expression doesn't result in a number.<br/>";
     }
   }
 
@@ -122,7 +119,6 @@ sub answer_response {
     my $fallback_result = "";
     for (my $what=1; $what<=2 && !$done; $what++) {
       for (my $i=0; $i<=$n_ans && !$done; $i++) {
-        #print "<br/>what=$what, i=$i ";
         my $canned_ans = $p->get_ans($i);
         my $c = $canned_ans->is_correct();
         if (($what==1 && $c) || ($what==2 && !$c)) {
@@ -180,7 +176,6 @@ sub answer_response {
     }
   }
   
-  if ($debug) {print "leaving answer_response"}
   if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"leaving answer_response")}
 
   return ($result,$student_answer_is_correct);
@@ -260,7 +255,6 @@ sub identical_answer {
   my %flags = ();
 
   my $debug = 0;
-  if ($debug) {print "in identical_answer, 1<br/>";}
   if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"in identical answer, 100")}
 
   # options for Data::Dumper, used with caching
@@ -278,8 +272,6 @@ sub identical_answer {
     my $x = $filter;
     $x =~ s/\~/\($their_string\)/g;
     $their_string = $x;
-
-    #print "<p>our_string=$our_string, their_string=$their_string, filter=$filter</p>\n";
 
   if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"in identical answer, 200")}
   # Parse their expression:
@@ -303,7 +295,6 @@ sub identical_answer {
   if (! -e $cache_dir) {mkdir($cache_dir)}
   my $cache_file_base = $cache_dir . '/' . $problem_label;
 
-  #print "in identical_answer, 2<br/>";
   if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"in identical answer, 300")}
   # Parse the canned expression:
     my $our_expression;
@@ -405,7 +396,6 @@ sub identical_answer {
 			  }
         $our_expression->vars_ref(\%meas_hash);
         $their_expression->vars_ref(\%meas_hash);
-        if ($debug) {print "in identical_answer, 99<br/>";}
         if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"in identical answer, evaluating our result")}
         my $cache_file_output = $cache_file_base . '-out-' . $hash_our_string .'-' . $i . '-' . $unique;
         my $our_result;
@@ -422,7 +412,6 @@ sub identical_answer {
           close FILE;
           SpotterHTMLUtil::debugging_output("identical_answer(): wrote output to cache");
 				}
-        if ($debug) {print "in identical_answer, 100<br/>";}
         if ($our_expression->has_errors()) {
           $internal_error = 1;
           $internal_msg = "identical_answer(): error parsing, filter=$filter, our_expression=".
@@ -434,11 +423,8 @@ sub identical_answer {
    					"<br/>";
         }
         else {
-          if ($debug) {print "in identical_answer, 199<br/>";}
           if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"in identical answer, evaluating their result")}
           my $their_result = Measurement::promote_to_measurement($their_expression->evaluate());
-          if ($debug) {print "in identical_answer, 200, their_result=$their_result=, has_errors=".
-          			$their_expression->has_errors()."=<br/>";}
           if ($their_expression->has_errors()) {
             $disagreed = 1;
             $flags{EVAL_ERROR} = 1;
@@ -465,7 +451,6 @@ sub identical_answer {
 
                 # Figure out the magnitude and argument of theirs/ours:
                   my $ratio = $theirs_converted/$our_result;
-                  if ($debug) {print "ratio=$ratio="}
                   my $ratio_with_phase = Crunch::promote_cplx($ratio->number());
                   my $ratio_arg = Math::Complex::arg($ratio_with_phase);
                   my $ratio_mag = Math::Complex::abs($ratio_with_phase);
@@ -478,8 +463,6 @@ sub identical_answer {
                   my $theirs_is_real = (ref($their_plain) eq "Complex" && Math::Complex::Im($their_plain)==0)
                     || !ref($their_plain);
 
-                if ($debug) {print "ratio_mag=$ratio_mag, ratio_arg=$ratio_arg<br/>\n"}
-
                 # Figure out if magnitudes disagree:
                   my $epsilon = $canned_answer->tol();
                   if ($ratio_arg>1) {$ratio_mag = 100000.}
@@ -488,7 +471,6 @@ sub identical_answer {
                   if ($ratio_mag>1+$epsilon*1.0000001) {
                     $disagreed = 1;
                   }
-                 if ($debug) {print "ratio_mag=$ratio_mag, epsilon=$epsilon, disagreed=$disagreed<br/>\n"}
 
                 # Even if the magnitudes agreed, we may have to do more:
                   if (!$disagreed) {

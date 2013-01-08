@@ -151,6 +151,85 @@ I can\'t calculate the time it takes to hit the ground to 6 sig figs, because at
                                                        'raw_input'
                                                      ]
                                          },
+          'email.not_yet_sent' => {
+                                    'text' => [
+                                                [
+                                                  'lit',
+                                                  '  <form method="POST" action="'
+                                                ],
+                                                [
+                                                  'ref',
+                                                  'link'
+                                                ],
+                                                [
+                                                  'lit',
+                                                  '">
+  <table>
+  <tr><td>From:</td><td>'
+                                                ],
+                                                [
+                                                  'ref',
+                                                  'from_html'
+                                                ],
+                                                [
+                                                  'lit',
+                                                  '</td></tr>
+  <tr><td>To:</td><td>'
+                                                ],
+                                                [
+                                                  'ref',
+                                                  'to_email'
+                                                ],
+                                                [
+                                                  'lit',
+                                                  '</td></tr></table>
+  <tr><td>Subject:</td><td>'
+                                                ],
+                                                [
+                                                  'ref',
+                                                  'subject1'
+                                                ],
+                                                [
+                                                  'lit',
+                                                  '
+  <input type="text" name="emailSubject" size="50" maxlength="50" value="'
+                                                ],
+                                                [
+                                                  'ref',
+                                                  'subject2'
+                                                ],
+                                                [
+                                                  'lit',
+                                                  '">
+  </td></tr>
+  <tr><td colspan="2">
+  <textarea name="emailBody" rows="30" cols="100">
+  '
+                                                ],
+                                                [
+                                                  'ref',
+                                                  'body'
+                                                ],
+                                                [
+                                                  'lit',
+                                                  '
+  </textarea><br/>
+  <input type="submit" name="submitEmailButton" value="Send">
+  </td></tr>
+  </table>
+  </form>
+'
+                                                ]
+                                              ],
+                                    'args' => [
+                                                'link',
+                                                'from_html',
+                                                'to_email',
+                                                'subject1',
+                                                'subject2',
+                                                'body'
+                                              ]
+                                  },
           'user.not_same_password_twice' => {
                                               'text' => [
                                                           [
@@ -768,6 +847,61 @@ function format_variable_name(x) {
                                                     ],
                                           'args' => []
                                         },
+          'email.send' => {
+                            'text' => [
+                                        [
+                                          'lit',
+                                          '  <table>
+  <tr><td>From:</td><td>'
+                                        ],
+                                        [
+                                          'ref',
+                                          'from_html'
+                                        ],
+                                        [
+                                          'lit',
+                                          '</td></tr>
+  <tr><td>To:</td><td>'
+                                        ],
+                                        [
+                                          'ref',
+                                          'to_email'
+                                        ],
+                                        [
+                                          'lit',
+                                          '</td></tr></table>
+  <tr><td>Subject:</td><td>'
+                                        ],
+                                        [
+                                          'ref',
+                                          'subject'
+                                        ],
+                                        [
+                                          'lit',
+                                          '
+  </td></tr>
+  <tr><td colspan="2">
+  <p>'
+                                        ],
+                                        [
+                                          'ref',
+                                          'body'
+                                        ],
+                                        [
+                                          'lit',
+                                          '</p>
+  </td></tr>
+  </table>
+'
+                                        ]
+                                      ],
+                            'args' => [
+                                        'from_html',
+                                        'to_email',
+                                        'subject',
+                                        'body'
+                                      ]
+                          },
           'checker.how_to_enter_answers' => {
                                               'text' => [
                                                           [

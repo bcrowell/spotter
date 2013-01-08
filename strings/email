@@ -1,0 +1,29 @@
+not_yet_sent = <<__form__
+  <form method="POST" action="$link">
+  <table>
+  <tr><td>From:</td><td>$from_html</td></tr>
+  <tr><td>To:</td><td>$to_email</td></tr></table>
+  <tr><td>Subject:</td><td>$subject1
+  <input type="text" name="emailSubject" size="50" maxlength="50" value="$subject2">
+  </td></tr>
+  <tr><td colspan="2">
+  <textarea name="emailBody" rows="30" cols="100">
+  $body
+  </textarea><br/>
+  <input type="submit" name="submitEmailButton" value="Send">
+  </td></tr>
+  </table>
+  </form>
+__form__
+
+send = <<__form__
+  <table>
+  <tr><td>From:</td><td>$from_html</td></tr>
+  <tr><td>To:</td><td>$to_email</td></tr></table>
+  <tr><td>Subject:</td><td>$subject
+  </td></tr>
+  <tr><td colspan="2">
+  <p>$body</p>
+  </td></tr>
+  </table>
+__form__

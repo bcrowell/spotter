@@ -3,6 +3,7 @@ package Email;
 use strict;
 
 use Mail::Sendmail;
+use Tint 'tint';
 
 my $default_from = '"Spotter at lightandmatter.com" <no-reply@lightandmatter.com>';
 
@@ -65,6 +66,8 @@ sub send_email_from_student {
   my $subject1 = shift;
   my $subject2 = shift;
 
+  my $out = '';
+
   #print "link=$link,body=$body,sub1=$subject1,sub2=$subject2";
 
   $subject1 = "$subject1: ";
@@ -78,44 +81,23 @@ sub send_email_from_student {
     my $r = send_an_email($to_email,$from,$subject,$body,0);
     my $err = $r->[0];
     if ($err eq '') {
-      print "<p>Your e-mail has been sent.</p>\n";
+      $out = $out . "<p>Your e-mail has been sent.</p>\n";
       $sent = 1;
     }
     else {
-      print "<p>Error: $err</p>\n";
+      $out = $out . "<p>Error: $err</p>\n";
     }
   }
 
   if (!$sent) {
-  print '<form method="POST" action="'.$link.'">'."\n";
-  print "<table>\n";
-  print "<tr><td>From:</td><td>$from_html</td></tr>\n";
-  print "<tr><td>To:</td><td>$to_email</td></tr></table>\n";
-  print "<tr><td>Subject:</td><td>$subject1";
-  print '<input type="text" name="emailSubject" size="50" maxlength="50" value="'.$subject2.'">';
-  print "</td></tr>\n";
-  print '<tr><td colspan="2">'."\n";
-  print '<textarea name="emailBody" rows="30" cols="100">';
-  print $body;
-  print "</textarea><br/>\n";
-  print '<input type="submit" name="submitEmailButton" value="Send">'."\n";
-  print "</td></tr>\n";
-  print "</table>\n";
-  print "</form>\n";
+    $out = $out . tint('email.not_yet_sent','link'=>$link,'subject1'=>$subject1,'body'=>$body);
   }
 
   if ($sent) {
-  print "<table>\n";
-  print "<tr><td>From:</td><td>$from_html</td></tr>\n";
-  print "<tr><td>To:</td><td>$to_email</td></tr></table>\n";
-  print "<tr><td>Subject:</td><td>$subject";
-  print "</td></tr>\n";
-  print '<tr><td colspan="2">'."\n";
-  print "<p>".$body."</p>";
-  print "</td></tr>\n";
-  print "</table>\n";
+    $out = $out . tint('email.send','from_html'=>$from_html,'subject'=>$subject,'body'=>$body,'to_email'=>$to_email);
   }
 
+  return $out;
 }
 
 # Returns [$error_message,$severity]
