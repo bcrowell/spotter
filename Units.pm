@@ -18,7 +18,6 @@ use Rational;
 use Spotter;
 use utf8;
 
-
 use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
 
 use Exporter;

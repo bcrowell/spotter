@@ -39,7 +39,9 @@ $VERSION = 0.1;
 # The following convenience routine evaluates an expression from soup to nuts,
 # using only the defaults for everything. There's no error handling other than
 # returning a null string. This is meant for evaluating stuff I've defined
-# internally, and that I have tested and know will work.
+# internally, and that I have tested and know will work. Because it doesn't
+# have side-effects or depend on anything but defaults, it can be memoized, but
+# performance doesn't seem to be improved by memoization.
 sub lex_parse_and_eval {
 	my $expression = shift;
 	my $debug = 0;

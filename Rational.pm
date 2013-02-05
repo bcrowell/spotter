@@ -191,6 +191,8 @@ sub gcd
 {
 	my $a = shift;
 	my $b = shift;
+  $a = Crunch::demote_cplx($a) if ref($a) ne '';
+  $b = Crunch::demote_cplx($b) if ref($b) ne '';
   if ($b > $a)	{
 		($a, $b) = ($b , $a);
 	}

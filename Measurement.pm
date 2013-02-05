@@ -72,23 +72,29 @@ sub parse {
 sub number {
   my $self = shift;
   # Have to handle the case where this is not really a syntactically valid number. The parser will, for instance, parse "(2" into RPN like '(' '2'. That's
-  # a bug in the parser, but anyway we don't want to crash if that gets handed to us.
+  # a bug in the parser, but anyway we don't want to crash if that gets handed to us. This also gets called a lot simply
+  # to read or set a number that has already been parsed.
   if (@_) {
     my $x = shift;
-    if ($x =~ m/^[0-9\.\+\-e]+$/o && ref($x) eq '') { # This clause is for efficiency.
-      $self->{NUMBER} = $x+0.;
-    }
-    else { # the less common case, where it's complex
-      if ($x =~ m/^[0-9\.\+\-ie]+$/) { # loose check for syntactically valid number
-        if (!(ref($x) eq "" && $x eq "?")) {
-          $x=Crunch::demote_cplx($x); # Some things might pass the syntax check above, e.g., "2..", and demote_cplx will then return zero.
+    if (ref($x) eq '' && ($x & ~$x)) { # It hasn't been parsed yet. The second clause is a trick to test whether it's a string.
+      if ($x =~ m/^[0-9\.\+\-e]+$/o) { # This clause is for efficiency.
+        $self->{NUMBER} = $x+0.;
+      }
+      else { # the less common case, where it's complex
+        if ($x =~ m/^[0-9\.\+\-ie]+$/) { # loose check for syntactically valid number
+          if (!(ref($x) eq "" && $x eq "?")) {
+            $x=Crunch::demote_cplx($x); # Some things might pass the syntax check above, e.g., "2..", and demote_cplx will then return zero.
+          }
+          $self->{NUMBER} = $x;
         }
-        $self->{NUMBER} = $x;
+        else {
+          $self->{NUMBER} = '?';
+        }
       }
-      else {
-        $self->{NUMBER} = '?';
-      }
-	  }
+    }
+    else { # It's not a string that needs to be parsed;
+      $self->{NUMBER} = Crunch::demote_cplx($x);
+    }
   }
   return $self->{NUMBER};
 }
@@ -209,14 +215,12 @@ sub absval {
 
 sub simplify {
   my $self = shift;
-  my $r = ref($self->number);
-  my $u = $r eq "" && $self->number eq "?";
-  #my $u = Eval::is_undef($self); #This causes an error...why?
-  if ($r ne "Math::Complex" && !$u) {
-    $self->number(Math::Complex->new($self->number,0));
+  my $n = $self->number;
+  my $r = ref($n);
+  my $u = $r eq "" && $self->number eq "?"; # numerical part is undefined
+  if ($r ne "Math::Complex" && !$u) { # if not complex, promote to complex
+    $self->number(Math::Complex->new($n,0));
   }
-  my $u = $self->units;
-  #print "Measurement::simplify, ".ref($u)."\n";
   $self->units->simplify;
 }
 
