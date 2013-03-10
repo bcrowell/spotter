@@ -23,14 +23,6 @@ our $debugging_output = '';
 our $homepath = '';
 our $title = 'Spotter';
 
-sub HTTPHeader {
-        my $cookie_list = shift;
-        return $cgi->header(-type=>'text/html',-cookie=>$cookie_list,-expires=>'now');
-	        # the 'expires' part refers to cache control, not cookies.
-	#print "Pragma: no-cache\nCache-control: private\nContent-Type: text/html\n\n";
-}
-
-
 sub HeaderHTML
 {
   my ($spotter_js_dir) = @_;

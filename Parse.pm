@@ -837,32 +837,32 @@ sub eliminate_illegal_characters {
 }
 
 sub count_sig_figs {
-                          my $ee = shift;
-                          # The following is not meant to be totally airtight logic. E.g., it will give wrong answers on expressions
-                          # like "3.1 10^32+18". The main goal is not to give false positives, i.e., not to complain about an answer that actually is
-                          # fully evaluated with the right number of sig figs. In ambiguous cases, like 5300, return the lowest possible number of sig figs.
-                          my $mantissa = '__none__'; # the significant (without leading sign)
-                          $ee =~ s/\n$//; # trim trailing whitespace
-                          my $front = $ee;
-                          $front =~ s/\s*\*?\s*10\^[+\-]?\d+.*//; # strip off exponent and anything after it (no whitespace allowed)
-                          if ($ee=~/\^/ && $front=~/^[\-+]$/) {return 0} # special case for, e.g., +10^37, -10^37
-                          if ($front=~/^\s*$/) {$mantissa = ''} # e.g., numbers with no mantissa, just an exponent, e.g., 10^34
-                          if ($front=~/([\d]+)/) {$mantissa = $1}
-                          if ($front=~/([\d]*\.[\d]+)/) {$mantissa = $1}
-                          if ($front=~/([\d]+\.[\d]*)/) {$mantissa = $1}
-                          my $fully_evaluated = $mantissa ne '__none__'  && !($ee=~m@[a-zA-Z><%=~,!/{}\[\]\(\)]@);
-                          if ($fully_evaluated) {
-                            my $sig_figs = $mantissa;
-                            my $has_decimal_point = ($sig_figs=~/\./);
-                            $sig_figs =~ s/^0?\.0*//; # strip leading zeroes
-                            unless ($has_decimal_point) {$sig_figs =~ s/0+$//}; # strip zeroes that are ambiguous as to sig figs, e.g., 5300 -> 53, but leave 137.00 alone
-                            $sig_figs =~ s/\.//g; # strip decimal point
-                            # print "       ee='$ee', front='$front', mantissa='$mantissa', sf='$sig_figs'\n";
-                            return length($sig_figs);
-                          }
-                          else {
-                            return -1;
-                          }
+  my $ee = shift;
+  # The following is not meant to be totally airtight logic. E.g., it will give wrong answers on expressions
+  # like "3.1 10^32+18". The main goal is not to give false positives, i.e., not to complain about an answer that actually is
+  # fully evaluated with the right number of sig figs. In ambiguous cases, like 5300, return the lowest possible number of sig figs.
+  my $mantissa = '__none__'; # the significant (without leading sign)
+  $ee =~ s/\n$//; # trim trailing whitespace
+  my $front = $ee;
+  $front =~ s/\s*\*?\s*10\^[+\-]?\d+.*//; # strip off exponent and anything after it (no whitespace allowed)
+  if ($ee=~/\^/ && $front=~/^[\-+]$/) {return 0} # special case for, e.g., +10^37, -10^37
+  if ($front=~/^\s*$/) {$mantissa = ''} # e.g., numbers with no mantissa, just an exponent, e.g., 10^34
+  if ($front=~/([\d]+)/) {$mantissa = $1}
+  if ($front=~/([\d]*\.[\d]+)/) {$mantissa = $1}
+  if ($front=~/([\d]+\.[\d]*)/) {$mantissa = $1}
+  my $fully_evaluated = $mantissa ne '__none__'  && !($ee=~m@[a-zA-Z><%=~,!/{}\[\]\(\)]@);
+  if ($fully_evaluated) {
+    my $sig_figs = $mantissa;
+    my $has_decimal_point = ($sig_figs=~/\./);
+    $sig_figs =~ s/^0?\.0*//; # strip leading zeroes
+    unless ($has_decimal_point) {$sig_figs =~ s/0+$//}; # strip zeroes that are ambiguous as to sig figs, e.g., 5300 -> 53, but leave 137.00 alone
+    $sig_figs =~ s/\.//g; # strip decimal point
+    # print "       ee='$ee', front='$front', mantissa='$mantissa', sf='$sig_figs'\n";
+    return length($sig_figs);
+  }
+  else {
+    return -1;
+  }
 }
 
 1;

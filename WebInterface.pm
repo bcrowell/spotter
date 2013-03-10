@@ -88,6 +88,7 @@ WebInterface->authen->config(
                         # so they have to log in every time. If they're at school and promiscuously sharing a browser,
                         # there's basically nothing I can do to prevent them from mistakenly putting in their answer
                         # while logged in as someone else.
+                        # In fact, this doesn't even seem to work -- it always gets set as a session cookie ...?
     ],
 );
 WebInterface->authen->protected_runmodes(qr/^(?!public_)/); # runmodes not starting with public_ are protected

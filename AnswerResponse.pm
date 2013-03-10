@@ -140,7 +140,7 @@ sub answer_response {
               else {
                 if ($sf->[1] eq 'not_evaluated') {
                   $result = $result .  
-                   "<p>The numerical part of your answer, $raw_input, does not appear to have been completely evaluated. For instance, you could have entered 1/3 as your answer, when the correct answer would have been 0.3, 0.33, or something like that.\n"
+                   "<p>The numerical part of your answer, $raw_input, does not appear to have been completely evaluated. For instance, you could have entered 1/3 as your answer, when the correct answer would have been 0.3, 0.33, or something like that. If you're using scientific notation, enter it using the format described below under \"How to enter answers into Spotter.\"\n"
                    ;
                 }
                 else {

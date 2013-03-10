@@ -90,7 +90,7 @@ sub send_email_from_student {
   }
 
   if (!$sent) {
-    $out = $out . tint('email.not_yet_sent','link'=>$link,'subject1'=>$subject1,'body'=>$body);
+    $out = $out . tint('email.not_yet_sent','from_html'=>$from_html,'to_email'=>$to_email,'link'=>$link,'subject1'=>$subject1,'body'=>$body);
   }
 
   if ($sent) {
@@ -128,7 +128,7 @@ sub send_an_email {
         }        
       } # end if valid address
       else {
-        $err = "email not sent to address -$to-, not a syntactically valid email address\n";
+        $err = "email not sent to address '$to', not a syntactically valid email address\n";
           $severity = 1;
       }
       return [$err,$severity];
