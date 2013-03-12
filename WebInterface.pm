@@ -84,11 +84,10 @@ WebInterface->authen->config(
   STORE => ['Cookie',
         NAME   => 'login',
         SECRET => 'not really so secret', # for my application, I don't care if they can forge a cookie
-        EXPIRY => '1d', # Not very relevant. If they're at home, presumably they're starting from the class's web page,
+        EXPIRY => '+1d', # Not very relevant. If they're at home, presumably they're starting from the class's web page,
                         # so they have to log in every time. If they're at school and promiscuously sharing a browser,
                         # there's basically nothing I can do to prevent them from mistakenly putting in their answer
                         # while logged in as someone else.
-                        # In fact, this doesn't even seem to work -- it always gets set as a session cookie ...?
     ],
 );
 WebInterface->authen->protected_runmodes(qr/^(?!public_)/); # runmodes not starting with public_ are protected
