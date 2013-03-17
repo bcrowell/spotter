@@ -72,6 +72,7 @@ sub answer_response {
   my $student_expression = Expression->new(EXPR=>$ans,OUTPUT_MODE=>"html",
 					VAR_NAMES=>\@vbl_list,UNITS_ALLOWED=>$units_allowed);
   my $parse_error = $student_expression->has_errors(PARSE_IT=>1);
+  SpotterHTMLUtil::debugging_output("parse_error: =$parse_error=");
   if ($parse_error) {
     $result = $result . $student_expression->format_errors();
   }
@@ -430,7 +431,8 @@ sub identical_answer {
             $flags{EVAL_ERROR} = 1;
           }
           else {
-           if (!Measurement::compatible_units($their_result,$our_result,\%Spotter::standard_units)) {
+           my $compat = Measurement::compatible_units($their_result,$our_result,\%Spotter::standard_units);
+           if (!$compat && defined $compat) {
              $disagreed = 1;
              $flags{UNITS_DISAGREE} = 1;
             }

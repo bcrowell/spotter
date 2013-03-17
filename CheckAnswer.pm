@@ -82,7 +82,7 @@ sub respond_to_query {
           ($response,$student_answer_is_correct) =  AnswerResponse::answer_response($p,kludgy_unit_fix($ans,$units_allowed),$units_allowed,$problem_label,$raw_input);
           $feedback = $feedback . $response;
         }
-        my $q = single_quotify($feedback);
+        my $q = single_quotify_with_newlines($feedback);
         $return = $return .  "<script>var answer_feedback = $q;</script>\n".$SpotterHTMLUtil::cgi->startform."\n"; # see note in TODO
         $return = $return .  "<p>";
         my $default = "";

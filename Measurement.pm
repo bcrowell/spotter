@@ -163,6 +163,7 @@ sub expon {
 # in $b is ignored.
 sub convert {
   my ($a,$b,$unit_def_ref) = @_;
+  return undef unless defined $a && defined $b;
   my $aa = $a->atomize($unit_def_ref);
   my $bb = Measurement->new(1.,$b->units);
   $bb = $bb->atomize($unit_def_ref);
@@ -298,6 +299,7 @@ sub is_manifestly_unitless {
 
 sub compatible_units {
   my ($a,$b,$unit_def_ref) = @_;
+  unless (defined $a && defined $b) {return undef}
   return reduces_to_unitless(Measurement->new(1,$a->units/$b->units),$unit_def_ref);
 }
 

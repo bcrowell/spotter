@@ -43,6 +43,7 @@ sub errors_found_by_heuristics {
     my $explain_diagram = "The following diagram shows how the parentheses are nested, and may help you to figure out what went wrong.\n"
 		."Each parenthesis on the left should have a matching right parenthesis directly across from it on the right.\n";
     my $diagram = paren_debugging_diagram($e);
+    #SpotterHTMLUtil::debugging_output("diagram=<pre>$diagram</pre>");
     if ($output_mode eq 'html') {$diagram = '<br/><pre>'.$diagram.'</pre>'} 
     return "$intro$describe\n$explain_diagram\n$diagram";
   }

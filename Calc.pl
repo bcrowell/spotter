@@ -204,13 +204,16 @@ while(1){
                                     print "analytic\n";
                                 }
                         }
-                        print OUTFILE format_errors(ERRORS_REF=>$errors_ref,TOKENS_REF=>$tokens_ref,OUTPUT_MODE=>$output_mode);
+                        print OUTFILE format_errors(ERRORS_REF=>$errors_ref,TOKENS_REF=>$tokens_ref,
+                                                           OUTPUT_MODE=>$output_mode);
                         
                         my $result;
-                        ($result,$errors_ref) 
-                        = evaluate(RPN=>$rpn_ref, VARIABLES=>\%vars, CONSTANTS=>\%cons_hash,
+                        unless (@$errors_ref) {
+                          ($result,$errors_ref) 
+                          = evaluate(RPN=>$rpn_ref, VARIABLES=>\%vars, CONSTANTS=>\%cons_hash,
                                                                 DEBUG=>0,BACK_REFS=>$back_refs_ref,PRETTIFY_UNITS=>1);
-                        print OUTFILE format_errors(ERRORS_REF=>$errors_ref,TOKENS_REF=>$tokens_ref,OUTPUT_MODE=>$output_mode);
+                          print OUTFILE format_errors(ERRORS_REF=>$errors_ref,TOKENS_REF=>$tokens_ref,OUTPUT_MODE=>$output_mode);
+                        }
 
                         #print "ref=".ref($result)."\n";
                         

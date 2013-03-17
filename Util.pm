@@ -120,4 +120,13 @@ sub single_quotify {
   return "'$s'";
 }
 
+# The following is for consumption by javascript, is needed when paren_debugging_diagram()
+# creates ascii-art diagrams to be surrounded by <pre></pre>.
+sub single_quotify_with_newlines {
+  my $s = shift;
+  $s  =~ s/'/\\'/g;
+  $s  =~ s/\n/\\n/g;
+  return "'$s'";
+}
+
 1;

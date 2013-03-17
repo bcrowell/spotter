@@ -66,7 +66,7 @@ $VERSION = 0.1;
 #  m*2. But in cases like f + g, we don't want the whitespace to have this significance.
 #  There is now some code in lex() and parse() to handle this correctly.
 # 
-sub parse{
+sub parse {
   my %args = (
     TOKENS                => [],
     RPN                        => [],
@@ -377,14 +377,11 @@ sub parse{
       if (!$did && $token_to_left=~m/^\s+$/ && $wants_units) {$did=1; $prefix="units:";} # expressions like 2 m (two meters)
       if (!$did && $matches_units_group && !$could_be_vars) {$did=1; $prefix="units:";}
       $t = $prefix . $t;
-      push(@$rpn_ref,$t);
+      push(@$rpn_ref,$t) unless (is_l_paren($t) || is_r_paren($t)); 
+            # ...can have $t eq '(', etc., when there are unbalanced parens. This is a syntax error and is
+            # flagged elsewhere as an error. Just ignore it here.
       $parsed = 1;
     }
-
-
-
-
-
     
     #Go inside parens:
     if (is_l_paren($leftmost_nonwhite_token)
