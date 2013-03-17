@@ -130,10 +130,10 @@ sub has_errors {
     @_
   );
   my $parse_it = $args{PARSE_IT};
-  if ($self->{HAS_HEUR_ERRORS}) {return 1}
   if ($parse_it) {$self->lex()}  # doesn't actually do anything if already lexed
   if ($self->{HAS_LEX_ERRORS}) {return 1}
   if ($parse_it) {$self->parse();}  # doesn't actually do anything if already parsed
+  if ($self->{HAS_HEUR_ERRORS}) {return 1}
   if ($self->{HAS_PARSE_ERRORS}) {return 1}
   if ($self->{HAS_EVAL_ERRORS}) {return 1}
   return 0;
@@ -278,6 +278,10 @@ sub parse {
   }
   ($self->{RPN_REF},$self->{PARSE_ERRORS_REF},$self->{PARSE_BACK_REFS_REF}) =
                   Parse::parse(TOKENS=>$self->{TOKENS_REF},VARIABLES=>$self->var_names(),DEBUG=>0,UNITS=>$units_ref);
+  if (0) { #qwe
+    my $rpn = $self->{RPN_REF};
+    print STDERR "rpn=",join(',',@$rpn),"=\n";
+  }
   if (!null_array_ref($self->{PARSE_ERRORS_REF})) {
     $self->{HAS_PARSE_ERRORS} = 1;
   }
@@ -450,4 +454,3 @@ sub clear {
 }
 
 1;
-

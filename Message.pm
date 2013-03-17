@@ -144,7 +144,8 @@ sub get_error_form {
   if ($code eq "insidefun2") {return "Please eliminate the ambiguity by adding parentheses to make either ...(~0 ~1)~2~3... or ...~0(~1~2~3)..."}
 
   # parser
-  if ($code eq "paren_mismatch") {return "mismatched parentheses: ~0...~1"}
+  if ($code eq "paren_mismatch") {return "mismatched style of parentheses: ~0...~1"}
+  if ($code eq "unbalanced_parens") {return "unbalanced parentheses"}
   if ($code eq "empty_expression") {return "empty expression"}
   if ($code eq "nothing_to_left") {return "There is nothing to the left of the symbol ~0."}
   if ($code eq "nothing_to_right") {return "There is nothing to the right of the symbol ~0."}

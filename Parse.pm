@@ -377,9 +377,13 @@ sub parse {
       if (!$did && $token_to_left=~m/^\s+$/ && $wants_units) {$did=1; $prefix="units:";} # expressions like 2 m (two meters)
       if (!$did && $matches_units_group && !$could_be_vars) {$did=1; $prefix="units:";}
       $t = $prefix . $t;
-      push(@$rpn_ref,$t) unless (is_l_paren($t) || is_r_paren($t)); 
-            # ...can have $t eq '(', etc., when there are unbalanced parens. This is a syntax error and is
-            # flagged elsewhere as an error. Just ignore it here.
+      if (is_l_paren($t) || is_r_paren($t)) {
+        # This only occurs if we have a syntax error involving mismatched parens.
+        push(@errors,"e:unbalanced_parens:$from:$to:-1:-1");
+      }
+      else {
+        push(@$rpn_ref,$t) unless (is_l_paren($t) || is_r_paren($t)); 
+      }
       $parsed = 1;
     }
     
