@@ -1,5 +1,8 @@
 #!/usr/bin/perl -wT
 
+use Carp::Always; # ubuntu package libcarp-always-perl; otherwise we get warnings from Math::Complex without stack traces
+                  # See http://perlmonks.org/?node_id=1023246
+
 #----------------------------------------------------------------
 # Expression evaluation module for Spotter.
 #----------------------------------------------------------------
@@ -199,7 +202,7 @@ sub evaluate{
   return ($result,\@errors);
 }
 
-sub do_binary_op{
+sub do_binary_op {
   my ($a,$b,$op,$units_def_ref,$back_ref,$errors_ref) = @_;
   my $result = "";
   my $bail_out = 0;
@@ -442,6 +445,7 @@ sub base_units {
 	return $y->units;
 }
 
+# This sub is duplicated in Crunch.pm.
 sub is_undef {
   my $x = shift;
   return (ref($x) eq "" && $x eq "?") || (ref($x) eq "Measurement" && is_undef($x->number));

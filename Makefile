@@ -1,4 +1,4 @@
-VERSION = 3.0.0
+VERSION = 3.0.1
 
 CGI_GENERAL = /usr/lib/cgi-bin
 WEB_SERVER_GROUP = www-data
@@ -34,7 +34,7 @@ install: Tint.pm
 
 depend:
 	# The following is for debian, ubuntu, etc.:
-	apt-get install libxml-parser-perl libxml-simple-perl libdigest-sha-perl libjson-perl libmail-sendmail-perl libcgi-application-plugin-authentication-perl libcgi-session-perl
+	apt-get install libxml-parser-perl libxml-simple-perl libdigest-sha-perl libjson-perl libmail-sendmail-perl libcgi-application-plugin-authentication-perl libcgi-session-perl libcarp-always-perl
 
 clean:
 	rm -f doc.log
@@ -49,4 +49,4 @@ test:
 	perl -I.. ./test_sig_figs.pl
 
 post:
-	cp doc.pdf $(HOME)/Lightandmatter/spotter/
+	cp doc/doc.pdf $(HOME)/Lightandmatter/spotter/

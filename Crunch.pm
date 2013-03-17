@@ -60,9 +60,18 @@ sub demote_cplx {
 
 sub promote_cplx{
   my $x = shift;
+  # Math::Complex prints warnings which are not exceptions. See http://perlmonks.org/?node_id=1023246
+  # Because they're not exceptions, the eval below doesn't really help, and we need the check against is_undef().
+  return 0+0*i if is_undef($x);
   eval{$x = $x + 0*i;};
   if ($@) {$x = 0+0*i}
   return $x;
+}
+
+# This sub is duplicated in Eval.pm.
+sub is_undef {
+  my $x = shift;
+  return (ref($x) eq "" && $x eq "?") || (ref($x) eq "Measurement" && is_undef($x->number));
 }
 
 sub conj {
