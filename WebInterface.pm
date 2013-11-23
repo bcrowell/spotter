@@ -16,7 +16,9 @@ use base 'CGI::Application'; # makes me a subclass of this; similar to ISA
 use CGI::Session;
 use CGI::Application::Plugin::Authentication;
 
-my $version_of_spotter = '3.0.0'; # When I change this, I need to rename the subdirectory of spotter_js, e.g., from spotter_js/2.4.0 to spotter_js/2.4.1
+my $version_of_spotter = '3.0.1';
+   # ... When I change this, I need to rename the subdirectory of spotter_js, e.g., from spotter_js/2.4.0 to spotter_js/2.4.1
+   # ... and also change the number in Makefile
 my $spotter_js_dir = "/spotter_js/$version_of_spotter";
 
 

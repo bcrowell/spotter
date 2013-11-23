@@ -1,4 +1,5 @@
 VERSION = 3.0.1
+# ... when changing this, also change WebInterface.pm
 
 CGI_GENERAL = /usr/lib/cgi-bin
 WEB_SERVER_GROUP = www-data

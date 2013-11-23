@@ -116,7 +116,8 @@ sub send_an_email {
       if ($err eq '' && syntactically_valid($to)) {
         my $connect = 'localhost';
         if ($dk) {
-          $connect = 'localhost:587'; # via "submission" port, which gets filtered by the dkim-signing daemon
+          #$connect = 'localhost:587'; # via "submission" port, which gets filtered by the dkim-signing daemon
+          # commented out because not currently working for me
         }
         # But normally we don't want that, because this is how students send email with the from: being aol or whatever.
         if (Mail::Sendmail::sendmail('To'=>$to, 'From'=>$from, 'Message'=>$body, 'Subject'=>$subject, 'smtp'=>$connect)) {

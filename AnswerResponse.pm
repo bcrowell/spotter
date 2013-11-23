@@ -96,7 +96,7 @@ sub answer_response {
     }
     if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"answer_response 220")}
     $student_expression->vars_ref(\%meas_hash);
-    my $result = $student_expression->evaluate();
+    $result = $student_expression->evaluate();
     $parse_error = $student_expression->has_errors();
     if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"answer_response 230")}
     if ($parse_error) {
