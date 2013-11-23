@@ -240,7 +240,8 @@ sub lex {
       $units_ref = {};
     }
     ($self->{TOKENS_REF},$self->{LEX_ERRORS_REF}) 
-                          = Parse::lex(EXPRESSION=>$self->expr(),VARIABLES=>$self->var_names(),UNITS=>$units_ref,DEBUG=>0);
+                          = Parse::lex(EXPRESSION=>$self->expr(),VARIABLES=>$self->var_names(),UNITS=>$units_ref,DEBUG=>0,
+                                       UNITS_ALLOWED=>$self->{UNITS_ALLOWED});
     if (!null_array_ref($self->{LEX_ERRORS_REF})) {
       $self->{HAS_LEX_ERRORS} = 1;
     }
@@ -277,7 +278,8 @@ sub parse {
     $units_ref = {};
   }
   ($self->{RPN_REF},$self->{PARSE_ERRORS_REF},$self->{PARSE_BACK_REFS_REF}) =
-                  Parse::parse(TOKENS=>$self->{TOKENS_REF},VARIABLES=>$self->var_names(),DEBUG=>0,UNITS=>$units_ref);
+                  Parse::parse(TOKENS=>$self->{TOKENS_REF},VARIABLES=>$self->var_names(),DEBUG=>0,UNITS=>$units_ref,
+                               UNITS_ALLOWED=>$units_allowed);
   if (0) { #qwe
     my $rpn = $self->{RPN_REF};
     print STDERR "rpn=",join(',',@$rpn),"=\n";

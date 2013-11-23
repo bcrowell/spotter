@@ -80,6 +80,7 @@ sub parse {
     PASS                => 0,
     FROM                => 0,
     TO                        => -1,
+    UNITS_ALLOWED  => 1,
     @_
   );
   my $tokens_ref = $args{TOKENS};
@@ -94,8 +95,10 @@ sub parse {
   my $from = $args{FROM};
   my $to = $args{TO};
   my $k = $#$tokens_ref; # number of tokens minus one
+  my $units_allowed = $args{UNITS_ALLOWED};
   if ($to == -1) {$to=$k;}
   my $unitsref = $args{UNITS};
+  if (!$units_allowed) {$unitsref = {}}
   my $prefixesref = $args{PREFIXES};
   my %units = %$unitsref;
   my %prefixes = %$prefixesref;
@@ -302,7 +305,7 @@ sub parse {
                   # Figure out whether it's a unit group, a variable.
                   my $token_to_left = "";
                   if ($index_of_last_nonwhite_token>0) {$token_to_left = $tokens_ref->[$index_of_last_nonwhite_token-1];}
-                  my $matches_units_group = is_unit_group($t,$unit_group_pat,$units_pat);
+                  my $matches_units_group = $units_allowed && is_unit_group($t,$unit_group_pat,$units_pat);
                   my $is_unitmul = (($op_token_to_push eq "__impliedmult" || 
                                   $op_token_to_push eq "__impliedmultwhitespace") && $matches_units_group);
                   if ($is_unitmul && !$unitmul) {$parsed=0;}
@@ -364,7 +367,7 @@ sub parse {
       if ($index_of_last_nonwhite_token>0) {$token_to_left = $tokens_ref->[$index_of_last_nonwhite_token-1];}
       my $second_to_left = "";
       if ($index_of_last_nonwhite_token>1) {$second_to_left = $tokens_ref->[$index_of_last_nonwhite_token-2];}
-      my $matches_units_group = is_unit_group($t,$unit_group_pat,$units_pat);
+      my $matches_units_group = $units_allowed && is_unit_group($t,$unit_group_pat,$units_pat);
       my $could_be_vars = contains_only_cons_and_vars($t,$cons_and_vars_pat);
       my $wants_units = $token_to_left=~m/^\s+$/ && $matches_units_group && $second_to_left ne "" && $second_to_left=~m/^[\d\.]+$/;
                     # ...The last two clauses are a fix for the bogus blank bug (see above).
@@ -398,7 +401,8 @@ sub parse {
         my ($dummy,$e,$back_refs_ref)
                  = parse(TOKENS=>$tokens_ref,RPN=>$rpn_ref,CONSTANTS=>$cons_ref,FUNCTIONS=>$funs_ref,
                                               VARIABLES=>$vars_ref,DEBUG=>$debug,PASS=>0,BACK_REFS=>$back_refs_ref,
-                                              FROM=>$leftmost_nonwhite_index+1,TO=>$rightmost_nonwhite_index-1,UNITS=>$unitsref);
+                                              FROM=>$leftmost_nonwhite_index+1,TO=>$rightmost_nonwhite_index-1,UNITS=>$unitsref,
+                                              UNITS_ALLOWED=>$units_allowed);
           push(@errors,@$e);
           if ($leftmost_nonwhite_token eq "|") {push(@$rpn_ref,"abs");}
           }
@@ -408,7 +412,8 @@ sub parse {
           my ($dummy,$e,$back_refs_ref)
                  = parse(TOKENS=>$tokens_ref,RPN=>$rpn_ref,CONSTANTS=>$cons_ref,FUNCTIONS=>$funs_ref,
                                               VARIABLES=>$vars_ref,DEBUG=>$debug,PASS=>$pass+1,BACK_REFS=>$back_refs_ref,
-                                              FROM=>$from,TO=>$to,UNITS=>$unitsref);
+                                              FROM=>$from,TO=>$to,UNITS=>$unitsref,
+                                              UNITS_ALLOWED=>$units_allowed);
           push(@errors,@$e);
           $parsed = 1;
     }
@@ -451,13 +456,16 @@ sub lex {
     RECURSION_DEPTH => 0,
     N_RECURSIONS=> 0,
     DEBUG                => 0,
+    UNITS_ALLOWED  => 1,
     @_
   );
   my $e = $args{EXPRESSION};
   my $consref = $args{CONSTANTS};
   my $funsref = $args{FUNCTIONS};
   my $varsref = $args{VARIABLES};
+  my $units_allowed = $args{UNITS_ALLOWED};
   my $unitsref = $args{UNITS};
+  if (!$units_allowed) {$unitsref = {}}
   my $prefixesref = $args{PREFIXES};
   my $token_to_left = $args{TOKEN_TO_LEFT};
   my $recursing = $args{RECURSING};
@@ -547,7 +555,8 @@ sub lex {
             if ($left ne "") {
               my ($recursion_tokens_ref,$recursion_errors_ref,$nr) 
                  = lex(@save_args,EXPRESSION=>$left,RECURSION_DEPTH=>$recursion_depth,
-                         TOKEN_TO_LEFT=>'',RECURSING=>1,N_RECURSIONS=>$n_recursions);
+                         TOKEN_TO_LEFT=>'',RECURSING=>1,N_RECURSIONS=>$n_recursions,
+                         UNITS_ALLOWED=>$units_allowed);
               $n_recursions = $nr;
               if ($n_recursions>=$max_recursions) {return([],[],$max_recursions+1)}
               while ($$recursion_tokens_ref[-1] eq "") {pop @$recursion_tokens_ref} #why?
@@ -558,7 +567,8 @@ sub lex {
             if ($right ne "") {
               my ($recursion_tokens_ref,$recursion_errors_ref,$nr) 
                  = lex(@save_args,EXPRESSION=>$right,RECURSION_DEPTH=>$recursion_depth,
-                         TOKEN_TO_LEFT=>$c,RECURSING=>1,N_RECURSIONS=>$n_recursions);
+                         TOKEN_TO_LEFT=>$c,RECURSING=>1,N_RECURSIONS=>$n_recursions,
+                         UNITS_ALLOWED=>$units_allowed);
               $n_recursions = $nr;
               if ($n_recursions>=$max_recursions) {return([],[],$max_recursions+1)}
               while ($$recursion_tokens_ref[-1] eq "") {pop @$recursion_tokens_ref} #why?
@@ -595,7 +605,8 @@ sub lex {
                                 if ($left ne "") {
                                   my ($recursion_tokens_ref,$recursion_errors_ref,$nr) 
                                                                 = lex(@save_args,EXPRESSION=>$left,RECURSION_DEPTH=>$recursion_depth,
-                                                                TOKEN_TO_LEFT=>$token_to_left,RECURSING=>1,N_RECURSIONS=>$n_recursions);
+                                                                TOKEN_TO_LEFT=>$token_to_left,RECURSING=>1,N_RECURSIONS=>$n_recursions,
+                                                                UNITS_ALLOWED=>$units_allowed);
                                   $n_recursions = $nr;
                                   if ($n_recursions>=$max_recursions) {return([],[],$max_recursions+1)}
                                   while ($$recursion_tokens_ref[-1] eq "") {pop @$recursion_tokens_ref} #why?
@@ -610,7 +621,8 @@ sub lex {
                                   }
                                   my ($recursion_tokens_ref,$recursion_errors_ref,$nr) 
                                                                         = lex(@save_args,EXPRESSION=>$s,RECURSION_DEPTH=>$recursion_depth,
-                                                                                        TOKEN_TO_LEFT=>$ttl,RECURSING=>1,N_RECURSIONS=>$n_recursions);
+                                                                                        TOKEN_TO_LEFT=>$ttl,RECURSING=>1,N_RECURSIONS=>$n_recursions,
+                                                                                        UNITS_ALLOWED=>$units_allowed);
                                   $n_recursions = $nr;
                                   if ($n_recursions>=$max_recursions) {return([],[],$max_recursions+1)}
                                   while ($$recursion_tokens_ref[-1] eq "") {pop @$recursion_tokens_ref} #why?
@@ -622,7 +634,8 @@ sub lex {
                                   if ($s ne "") {$ttl=substr $s,-1}
                                   my ($recursion_tokens_ref,$recursion_errors_ref,$nr) 
                                                                 = lex(@save_args,EXPRESSION=>$right,RECURSION_DEPTH=>$recursion_depth,
-                                                                                        TOKEN_TO_LEFT=>$ttl,RECURSING=>1,N_RECURSIONS=>$n_recursions);
+                                                                                        TOKEN_TO_LEFT=>$ttl,RECURSING=>1,N_RECURSIONS=>$n_recursions,
+                                                                                        UNITS_ALLOWED=>$units_allowed);
                                   $n_recursions = $nr;
                                   if ($n_recursions>=$max_recursions) {return([],[],$max_recursions+1)}
                                   while ($$recursion_tokens_ref[-1] eq "") {pop @$recursion_tokens_ref} #why?
@@ -638,7 +651,7 @@ sub lex {
     my $fatal_error = 0;
     my %possible = ();
     # ---- Unit group:
-    if ($units_pat ne "" && $e =~ m/^($unit_group_pat)/s) {
+    if ($units_allowed && $units_pat ne "" && $e =~ m/^($unit_group_pat)/s) {
       $possible{"u"} = $1;
     }
     
@@ -766,7 +779,8 @@ sub lex {
                 }
                 my ($recursion_tokens_ref,$recursion_errors_ref,$nr) 
                      = lex(@save_args,EXPRESSION=>$to_the_right,TOKEN_TO_LEFT=>$recursion_ttl,
-                                                RECURSING=>1,RECURSION_DEPTH=>$recursion_depth,N_RECURSIONS=>$n_recursions);
+                                                RECURSING=>1,RECURSION_DEPTH=>$recursion_depth,N_RECURSIONS=>$n_recursions,
+                                                UNITS_ALLOWED=>$units_allowed);
                 $n_recursions = $nr;
                 if ($n_recursions>=$max_recursions) {return([],[],$max_recursions+1)}
                 #if ($debug) {my @recursion_errors = @$recursion_errors_ref;

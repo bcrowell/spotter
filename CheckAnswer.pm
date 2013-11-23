@@ -79,7 +79,9 @@ sub respond_to_query {
         if ($ans ne "" && $throttle_ok) {
           # The user gave an answer, and clicked the Check button.
           $feedback = $feedback . "<p>Your answer was $ans .</p>";
-          ($response,$student_answer_is_correct) =  AnswerResponse::answer_response($p,kludgy_unit_fix($ans,$units_allowed),$units_allowed,$problem_label,$raw_input);
+          ($response,$student_answer_is_correct) =  
+               AnswerResponse::answer_response($p,kludgy_unit_fix($ans,$units_allowed),$units_allowed,
+                                               $problem_label,$raw_input);
           $feedback = $feedback . $response;
         }
         my $q = single_quotify_with_newlines($feedback);

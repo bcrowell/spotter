@@ -96,13 +96,13 @@ sub answer_response {
     }
     if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"answer_response 220")}
     $student_expression->vars_ref(\%meas_hash);
-    $result = $student_expression->evaluate();
+    my $ev = $student_expression->evaluate(); # may return measurement or string - qwe
     $parse_error = $student_expression->has_errors();
     if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"answer_response 230")}
     if ($parse_error) {
       $result = $result . $student_expression->format_errors();
     }
-    if (ref($result) ne "" && ref($result) ne "Math::Complex" && ref($result) ne "Measurement") {
+    if (ref($ev) ne "" && ref($ev) ne "Math::Complex" && ref($ev) ne "Measurement") {
       $parse_error = 1;
       $result = $result . ref($result)."=";
       $result = $result . "Illegal variable or use of units. Your expression doesn't result in a number.<br/>";
@@ -126,7 +126,8 @@ sub answer_response {
           if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"answer_response checking against canned answer ...")}
           my ($match,$msg,$temp_internal_msg) = identical_answer(STUDENT_ANSWER=>$ans,
             VARIABLES=>\%vbl_hash,CANNED_ANSWER=>$canned_ans,
-            STUDENT_UNFILTERED_EX=>$student_expression,PROBLEM_LABEL=>$problem_label);
+            STUDENT_UNFILTERED_EX=>$student_expression,PROBLEM_LABEL=>$problem_label,
+            UNITS_ALLOWED=>$units_allowed);
           if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"answer_response ...done")}
           if ($match eq "eq") {
             # It matches:
@@ -168,7 +169,7 @@ sub answer_response {
         }
       }
     }
-    if ($result eq "") {$result = $fallback_result;}
+    if ($result eq "") {$result = $fallback_result;} # qwe
     if ($result eq "") {$result = "<p>Incorrect</p>\n"}
     
     if ($result eq "?") {
@@ -249,6 +250,7 @@ sub identical_answer {
   my $their_string = $args{STUDENT_ANSWER};
   my $their_unfiltered_ex = $args{STUDENT_UNFILTERED_EX};
   my $problem_label = $args{PROBLEM_LABEL};
+  my $units_allowed = $args{UNITS_ALLOWED};
   my %vars = %$vars_ref;
   my @var_names = keys(%vars);
   my $internal_error = 0;
@@ -277,7 +279,7 @@ sub identical_answer {
   if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"in identical answer, 200")}
   # Parse their expression:
     my $their_expression = Expression->new(EXPR=>$their_string,OUTPUT_MODE=>"html",
-					VAR_NAMES=>\@var_names);
+					VAR_NAMES=>\@var_names,UNITS_ALLOWED=>$units_allowed);
     my $parse_error = $their_expression->has_errors(PARSE_IT=>1);
     if ($parse_error) {
       $internal_error = 1;
@@ -313,7 +315,7 @@ sub identical_answer {
       }
       else {
         $our_expression = Expression->new(EXPR=>$our_string,OUTPUT_MODE=>"html",
-				  	VAR_NAMES=>\@var_names);
+				  	VAR_NAMES=>\@var_names,UNITS_ALLOWED=>$units_allowed);
         $parse_error = $our_expression->has_errors(PARSE_IT=>1);
         open(FILE,">$cache_file_our_expression") or die "error: $!, opening $cache_file_our_expression for output";
         print FILE Dumper($our_expression);

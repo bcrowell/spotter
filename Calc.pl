@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 #----------------------------------------------------------------
-# Copyright (c) 2001-2003 Benjamin Crowell, all rights reserved.
+# Copyright (c) 2001-2013 Benjamin Crowell, all rights reserved.
 #
 # This software is available under two different licenses: 
 #  version 2 of the GPL, or
@@ -20,6 +20,7 @@
 #   -h                           html output mode
 #   -x                           load some useful physics symbols
 #   -s                           If the expression input using -e was a fully evaluated numerical expression, output the number of sig figs. Otherwise output -1.
+#   -u                           don't allow units in expressions
 #
 # Type control-D to exit.
 #
@@ -53,8 +54,8 @@ my $line_num = 1;
 
 #------------------------------------------------
 my %options = ();
-getopts("pdci:o:e:hxs",\%options);
-foreach my $op ("p","d","i","o","c","e","h","s") {
+getopts("pdci:o:e:hxsu",\%options);
+foreach my $op ("p","d","i","o","c","e","h","s","u") {
   if (!exists $options{$op}) {$options{$op}="";}
 }
 #------------------------------------------------
@@ -86,9 +87,16 @@ my $print_input_back_out = $options{"p"};
 my $output_mode = "text";
 if ($options{"h"} ne "") {$output_mode="html";}
 
-if ($debug) {print "output_mode=$output_mode\n";}
+my $units_allowed = 1;
+if ($options{'u'}) {
+  $units_allowed = 0;
+}
+
+if ($debug) {print "output_mode=$output_mode\nunits_allowed=$units_allowed\n";}
+
 
 if ($options{'x'}) {
+  if (!$units_allowed) {die "options -x and -u are incompatible"}
   foreach my $x(
     ['e','1.60217649 10^-19 C'],
     ['G','6.67428 10^-11 N.m2/kg2'],
@@ -162,7 +170,7 @@ while(1){
                         ($tokens_ref,$errors_ref) = 
                           lex(EXPRESSION=>$expression,
                                 VARIABLES=>\@var_names, CONSTANTS=>\@cons_names,
-                                DEBUG=>0);
+                                DEBUG=>0,UNITS_ALLOWED=>$units_allowed);
                         
                         my @tt = @$tokens_ref;
                         
@@ -176,14 +184,16 @@ while(1){
                         # The following is a kludge -- should just use the
                         # object-oriented interface from the get-go.
                         my $e = Expression->new(EXPR=>$expression,
-                                      VAR_NAMES=>\@var_names,OUTPUT_MODE=>'text');
+                                      VAR_NAMES=>\@var_names,OUTPUT_MODE=>'text',
+                                      UNITS_ALLOWED=>$units_allowed);
                         $e->parse(); # kludge, forces it to do a check_ambiguities()
                         print $e->format_errors();
                         
                         my $back_refs_ref;
                         ($rpn_ref,$errors_ref,$back_refs_ref) =
                           parse(TOKENS=>$tokens_ref,        
-                                        VARIABLES=>\@var_names, CONSTANTS=>\@cons_names,DEBUG=>0);
+                                        VARIABLES=>\@var_names, CONSTANTS=>\@cons_names,DEBUG=>0,
+                                        UNITS_ALLOWED=>$units_allowed);
                         
                         if ($debug) {
                                 print "rpn = ";
