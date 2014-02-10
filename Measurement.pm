@@ -299,7 +299,12 @@ sub is_manifestly_unitless {
 
 sub compatible_units {
   my ($a,$b,$unit_def_ref) = @_;
+  # As a special case, a 0 without explicit units is considered to be compatible in terms of units with any number
+  # that has units. For example, if a question asks for a velocity, and the correct answer happens to be 0, we want
+  # to give the right response both when the student puts in 0 (correct) and when the student puts in x/t (incorrect,
+  # and not incorrect because of units).
   unless (defined $a && defined $b) {return undef}
+  if (($a->is_zero && $a->reduces_to_unitless) || ($b->is_zero && $b->reduces_to_unitless)) {return 1}
   return reduces_to_unitless(Measurement->new(1,$a->units/$b->units),$unit_def_ref);
 }
 
