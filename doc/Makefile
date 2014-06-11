@@ -8,4 +8,4 @@ clean:
 	rm -f *~ a.a
 
 post:
-	cp doc.pdf /var/www/spotter/
+	cp doc.pdf ~/Lightandmatter/spotter/doc.pdf

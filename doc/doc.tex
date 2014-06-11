@@ -662,6 +662,15 @@ by trying to anticipate all the possible forms the result could take, or, more c
  it's a trade-off. In the future, I plan to improve the efficiency of the
  code, which will allow a greater number of points to be used.
 
+\mysubsection{arbitrary multiplicative or additive constants}
+Sometimes an answer is only meaningful up to an over-all additive or multiplicative constant.
+An additive example would be an indefinite integral, which can have a constant of integration.
+A multiplicative example would be an expression that defines a proportionality, but we don't
+care about the constant of proportionality. These two cases can be handled by using
+\verb@filter="-"@ or \verb@filter="/"@. The first tests whether the student's answer and
+the canned answer have a fixed difference. The second tests whether they have a fixed
+ratio.
+
 \mysubsection{numerical problems}
 The following is an example of an answer file entry for a numerical
 problem:

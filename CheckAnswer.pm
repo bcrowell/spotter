@@ -36,10 +36,14 @@ sub poke_and_prod_student_answer {
         undef $raw_ans;
 
         my $unit_list = "";
-        my $units_allowed = 0;
+        my $units_allowed = 0; # not allowed by default; only allowed for numerical problems
         if ($p->options_stack_not_empty()) {
           $unit_list = $p->options_stack_top()->unit_list();
-          $units_allowed = $p->options_stack_top()->units_allowed(); # gets modified below if it's a numerical answer with a menu of units
+          $units_allowed = $p->options_stack_top()->units_allowed();
+              # Currently there is no provision in the xml format to allow units_allowed to be set
+              # in xml, and the r.h.s. of this assignment is always false.
+              # If this is a numerical answer with a menu of units, the value of $units_allowed
+              # gets modified below.
         }
         # The following is only for numerical answers that have units. If they entered 37 and selected units of meters
         # from the menu, what we do right here is parse the 37.
@@ -80,7 +84,7 @@ sub respond_to_query {
           # The user gave an answer, and clicked the Check button.
           $feedback = $feedback . "<p>Your answer was $ans .</p>";
           ($response,$student_answer_is_correct) =  
-               AnswerResponse::answer_response($p,kludgy_unit_fix($ans,$units_allowed),$units_allowed,
+               AnswerResponse::answer_response($p,$ans,$units_allowed,
                                                $problem_label,$raw_input);
           $feedback = $feedback . $response;
         }

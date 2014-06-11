@@ -1312,19 +1312,6 @@ sub file_exempt_from_throttling {
           return $exempt;
 }
 
-sub kludgy_unit_fix {
-          my $ans = shift;
-          my $units_allowed = shift;
-          # The units_allowed feature doesn't quite work right, so if units are not allowed, strip out all spaces
-          # from the answer. This has the effect of making sure 2 g is interpreted as 2*g, not 2 grams. Same deal for 2 m.
-          # Don't filter out all blanks, because they could be significant in, e.g., 3 10^3.
-          if (!$units_allowed) {
-            $ans =~ s/\s+g/g/g;
-            $ans =~ s/\s+m/m/g;
-          }
-          return $ans;
-}
-
 sub anon_forbidden_from_this_ip {
   my $ip = shift;
   my $throttle_dir = shift;

@@ -184,7 +184,7 @@ sub answer_response {
 }
 
 #----------------------------------------------------------------
-#           identical_answer
+#           sig_figs_ok
 #----------------------------------------------------------------
 sub sig_figs_ok {
   my ($canned,$student) = @_;
@@ -215,7 +215,7 @@ sub sig_figs_ok {
 #           canned one.
 #----------------------------------------------------------------
 # returns ($what,$message)
-#   $what	   eq=matches
+#   $what      eq=matches
 #              er=detected error in input
 #              va=matches units, not value
 #              un=doesn't match units
@@ -224,7 +224,7 @@ sub sig_figs_ok {
 #   $internal  in case of an internal error, this is what will end up in the log file
 #----------------------------------------------------------------
 # N_TESTS                how many random values of the variables to test; default is
-#                        1 for analytic functions, 10 for nonanalytic
+#                        fewer for analytic functions, more for nonanalytic
 # STUDENT_ANSWER         a string
 # CANNED_ANSWER          an Ans object
 # VARIABLES              ref to a hash of Vbl objects
@@ -235,7 +235,8 @@ sub sig_figs_ok {
 # PROBLEM_LABEL          a unique label for this problem, for use in caching results of calcs
 #----------------------------------------------------------------
 sub identical_answer {
-  my $n_tests_if_analytic = 3; # With this set to 1, I got rare mess-ups, e.g., x was judged to be the same as asin(x), because x happened to be very small.
+  my $n_tests_if_analytic = 3; # With this set to 1, I got rare mess-ups, e.g., x was judged to
+                               # be the same as asin(x), because x happened to be very small.
   my $n_tests_if_nonanalytic = 10;
   my %raw_args = (@_);
   my %args = (
@@ -264,9 +265,27 @@ sub identical_answer {
 	$Data::Dumper::Terse = 1;          # don't output names where feasible
 	$Data::Dumper::Indent = 0;         # turn off all pretty print
 
+  # two types of filters:
+  #    abs(~) ... we only compare absolute values; this is called unary filter, stored in $filter
+  #    - ... we don't care if student's answer and canned answer differ by a constant;
+  #          currently only - and / are allowed here; this is called relative filter
+  #    these can be combined like -;abs(~)
+  #    could also expand the 2nd type to allow other operators besides - and /, or to allow
+  #         more complicated expressions, a la Perl's $a and $b in sorts
+
+  my $filter = $canned_answer->filter();
+  my $relative_filter = '';
+  if ($filter=~/(.*);(.*)/) {
+    $relative_filter = $1;
+    $filter = $2;
+  }
+  if ($filter eq '-' || $filter eq '/') {
+    $relative_filter = $filter;
+    $filter = '~';
+  }
+
   # Produce filtered versions of the two expressions:
     my $our_string = $canned_answer->e();
-    my $filter = $canned_answer->filter();
 
     my $x = $filter;
     $x =~ s/\~/\($our_string\)/g;
@@ -341,17 +360,19 @@ sub identical_answer {
       if ($their_expression->is_nonanalytic() || $our_expression->is_nonanalytic()) {
         $n_tests = $n_tests_if_nonanalytic;
         $some_nonanalytic = 1;
-	  	}
+      }
       else {
         $n_tests = $n_tests_if_analytic;
       }
     }
-		else { # no variables, so no need to evaluate it more than once
+    else { # no variables, so no need to evaluate it more than once
       $n_tests = 1;
       # Note that we can have no variables, and yet be nonanalytic. This happens frequently
       # when the answer is purely numerical, but the filter is abs(~).
-		}
+    }
   }
+  if ($relative_filter ne "" && $n_tests<2) {$n_tests=2}
+
     my $disagreed = 0; # innocent until proven guilty
     if (!$internal_error) {
       my $hash_our_string = substr(hash($our_string),0,8);
@@ -363,7 +384,9 @@ sub identical_answer {
       for (my $i=1; $i<=$n_tests; $i++) {
         $cached = $cached && -e ( $cache_file_inputs_base . $i );
       }
+      my ($their_first,$our_first); # save result for $i=1 for use with relative filter
       for (my $i=1; $i<=$n_tests && !$internal_error && !$disagreed; $i++) {
+        my $disagreed_this_time;
         my $cache_file_inputs = $cache_file_inputs_base . $i;
         if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"in identical answer, test $i")}
         my %meas_hash;
@@ -396,7 +419,7 @@ sub identical_answer {
           print FILE $c;
           close FILE;
           #SpotterHTMLUtil::debugging_output("identical_answer(): wrote inputs to cache");
-			  }
+        }
         $our_expression->vars_ref(\%meas_hash);
         $their_expression->vars_ref(\%meas_hash);
         if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"in identical answer, evaluating our result")}
@@ -453,6 +476,21 @@ sub identical_answer {
               }
               if ($canned_answer->tol_type() eq "mult" && $our_plain!=0 && $their_plain!=0) {
 
+                #SpotterHTMLUtil::debugging_output("identical_answer(): i=$i, theirs_converted=$theirs_converted, our_result=$our_result"); #qwe
+                # Handly any relative filtering:
+                  if ($relative_filter ne '' && $i>1) {
+                    # $our_plain==0 $their_plain==0
+                    if ($relative_filter eq '-') {
+                      $theirs_converted = $theirs_converted - $their_first;
+                      $our_result = $our_result - $our_first;
+                    }
+                    if ($relative_filter eq '/' && $our_plain!=0 && $their_plain!=0) {
+                      $theirs_converted = $their_first/$theirs_converted;
+                      $our_result = $our_first/$our_result;
+                    }
+                  }
+                #SpotterHTMLUtil::debugging_output("identical_answer(): i=$i, theirs_converted=$theirs_converted, our_result=$our_result"); #qwe
+
                 # Figure out the magnitude and argument of theirs/ours:
                   my $ratio = $theirs_converted/$our_result;
                   my $ratio_with_phase = Crunch::promote_cplx($ratio->number());
@@ -467,22 +505,24 @@ sub identical_answer {
                   my $theirs_is_real = (ref($their_plain) eq "Complex" && Math::Complex::Im($their_plain)==0)
                     || !ref($their_plain);
 
+                $disagreed_this_time = 0;
+
                 # Figure out if magnitudes disagree:
                   my $epsilon = $canned_answer->tol();
                   if ($ratio_arg>1) {$ratio_mag = 100000.}
                   if ($ratio_mag<1.) {$ratio_mag=1/$ratio_mag}
                   # The 1.0000001 here is so that, e.g., 2.5+-0.5 is guaranteed to include 3.0.
                   if ($ratio_mag>1+$epsilon*1.0000001) {
-                    $disagreed = 1;
+                    $disagreed_this_time = 1;
                   }
 
                 # Even if the magnitudes agreed, we may have to do more:
-                  if (!$disagreed) {
+                  if (!$disagreed_this_time) {
                     if ($ours_is_real && !$theirs_is_real) {
-                      $disagreed = ($ratio_arg>$epsilon) || ($ratio_arg>0.00001);
+                      $disagreed_this_time = ($ratio_arg>$epsilon) || ($ratio_arg>0.00001);
                     }
                     if (!$ours_is_real && !$theirs_is_real) {
-                      $disagreed = ($ratio_arg>$epsilon);
+                      $disagreed_this_time = ($ratio_arg>$epsilon);
                     }
                   }
 
@@ -492,12 +532,17 @@ sub identical_answer {
                 my $diff = $theirs_converted-$our_result;
                 # The 1.0000001 here is so that, e.g., 2.5+-0.5 is guaranteed to include 3.0.
                 if (abs($diff->number())>($canned_answer->tol())*1.0000001) {
-                  $disagreed = 1;
+                  $disagreed_this_time = 1;
                 }
               }
 
-              if ($disagreed) {
-               $flags{NUMERICAL_DISAGREEMENT} = 1;
+              if ($i==1) {
+                $their_first = $theirs_converted;
+                $our_first   = $our_result;
+              }
+              if ($disagreed_this_time && ($relative_filter eq '' || $i!=1)) {
+                  $disagreed = 1;
+                  $flags{NUMERICAL_DISAGREEMENT} = 1;
               }
 
             }
