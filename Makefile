@@ -53,6 +53,9 @@ test:
 	../Calc.pl -pc -i testsuite -o testsuite.out && \
 	cat testsuite.out ;\
 	perl -I.. ./test_sig_figs.pl
+	@echo "Generating diff of old and new test-suite outputs (not including sig figs):"
+	@diff tests/testsuite.out tests/testsuite.out.save
+	@echo "...end of diff"
 
 post:
 	cp doc/doc.pdf $(HOME)/Lightandmatter/spotter/

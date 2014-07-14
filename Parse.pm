@@ -134,8 +134,6 @@ sub parse {
   $last_token = "";
   my $funs_pat = array_to_pat(@$funs_ref);
 
-  my $glub = 0;
-
   if ($k<0) {push(@errors,"e:empty_expression:-2:-2:-2:-2"); return ($rpn_ref,\@errors);}
 
     #Note that, in the following, the lexer has guaranteed us no more than one white-
@@ -144,7 +142,6 @@ sub parse {
     if (is_white($tokens_ref->[$to])) {$to--;}
     if ($ord == 1) { ($start,$finish,$step) = ($to,$from,-1); }
     else { ($start,$finish,$step) = ($from,$to,1); }
-    if ($glub) {print "pass=$pass, ops=$ops, postfix=$postfix, start,finish=$start,$finish\n";}
     # In the following, start and finish are already guaranteed to
     # be nonwhite:
     my ($leftmost_nonwhite_index,$rightmost_nonwhite_index);
@@ -219,17 +216,6 @@ sub parse {
               && !$is_prefix_function;
               #&& !is_op_fast($token,$funs_pat);
       $outside_parens = $#parens_stack<0;
-      # pass=9, ops=(\*), postfix=0, start,finish=2,0
-      if ($glub && $pass==9 && start==$2 && $finish==0) {
-        my $c1 = $implied         && !$is_whitespace && ($i!=$start);
-        my $c2 = !$last_nonwhite_token_was_binary_op        && !$doing_non_infix_operator;
-        my $c3 = $last_token_was_outside_parens && !$is_prefix_function;
-        my @fails = ();
-        if ($i==$start) {push @fails,"i==start"}
-        if (is_op_fast($token,$funs_pat)) {push @fails,"is_function"}
-        print "50 token=$token implied_mult=$implied_mult c=$c1,$c2,$c3 [",join(',',@fails),"]\n";
-        print "      c3--$last_token_was_outside_parens,",!is_op_fast($token,$funs_pat),"\n";
-      }
       #if ($debug) {print "  parens stack=$#parens_stack\n"}
       if (!$is_whitespace) {++$n_nonwhite;}
       if (!$is_whitespace && $outside_parens) {++$n_nonwhite_outside;}
@@ -368,8 +354,6 @@ sub parse {
       }
       $last_token = $token;
     } # end loop over tokens
-
-  #if ($glub) {print "100 parsed=$parsed, ops=$ops\n";}
 
   if (!$parsed) {
     if ($n_nonwhite_outside==1 && $n_nonwhite==1) {
