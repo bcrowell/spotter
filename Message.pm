@@ -149,11 +149,14 @@ sub get_error_form {
   if ($code eq "empty_expression") {return "empty expression"}
   if ($code eq "nothing_to_left") {return "There is nothing to the left of the symbol ~0."}
   if ($code eq "nothing_to_right") {return "There is nothing to the right of the symbol ~0."}
-  if ($code eq "implied_mult_num_on_right") {return "Rewrite ~0~1 as ~1~0 or ~0^~1."}
+  if ($code eq "implied_mult_num_on_right") {return "Don't write implied multiplication with a number on the right, e.g., write 2x, not x2, because x2 could mean x squared. Possible fixes: (a) if you meant multiplication, eliminate the ambiguity by adding parentheses, e.g., (~0)(~1); or (b) if you meant multiplication, rewrite ~0~1 as ~1~0; or (c) if you meant exponentiation, rewrite ~0~1 as ~0^~1."}
   if ($code eq "nothing_inside_parens") {return "nothing inside parentheses"}
   if ($code eq "parse_failed") {return "unable to parse this expression"}
   if ($code eq "fun_without_arg") {return "The function has no argument."}
   if ($code eq "binary_without_args") {return "The operator has nothing to the left or right of it."}
+
+  # evaluator: functions
+  if ($code eq "stack_not_emptied") {return "The stack was not empty at the end of the calculation."}
 
   # evaluator: functions
   if ($code eq "function_arg_units") {return "The function ~0 requires a unitless argument. The argument has units of ~1."}

@@ -31,7 +31,7 @@ x2=3; x2+2 eq 5	# Test that variables that end in digits are parsed correctly.
 # Test all the binary operators with unitless real numbers.
 #------------------------------------------------
 |-1| eq 1
-(2,3) eq 3		# comma operator just leaves both on stack
+#(2,3) eq 3		# comma operator just leaves both on stack; this test no longer works, because I now generate an error when the stack doesn't get completely slurped up by the end of the calculation
 (2+2) eq 4
 (+2) eq (0+2)	# unary plus
 (5-3) eq 2
@@ -238,3 +238,10 @@ G=2; m=3; 1 Gm eq 10^9 m
 #------------------------------------------------
 f=1; g=1; f + g eq 2
 #
+#------------------------------------------------
+# Test for a bug involving factorial operator and implicit multiplication.
+# In the expression 2!1, there was no implicit multiplication being generated.
+# The following should now generate a complaint about writing a number on the
+# right in implied multiplication; before the bug was fixed, it gave 1 as the result rather than 2.
+#------------------------------------------------
+2!1 eq 2

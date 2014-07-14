@@ -3,7 +3,8 @@ VERSION = 3.0.3
 
 CGI_GENERAL = /usr/lib/cgi-bin
 WEB_SERVER_GROUP = www-data
-WEB_SERVER_DATA = /var/www
+WEB_SERVER_DATA = /var/www/html
+   # ... was /var/www on debian until ca. 2014
 CGI = $(CGI_GENERAL)/spotter3
    # ... can coexist on the same server with an installation of spotter 2.x
 ANSWERS = $(CGI)/answers
@@ -23,6 +24,10 @@ Tint.pm: strings/* tint
 	./tint --generate="perl" strings/* >Tint.pm
 
 install: Tint.pm
+	@rgrep DocumentRoot /etc/apache2/ | awk '{print $$NF}' | head -n 1 >dr.temp
+	@perl -e '$$dr = `cat dr.temp`; chomp $$dr; if ($$dr ne "$(WEB_SERVER_DATA)") {print "warning: WEB_SERVER_DATA = $(WEB_SERVER_DATA) in Makefile, but it should probably be $$dr"}'
+	@# ... http://serverfault.com/questions/611696/detecting-in-a-script-whether-apache2-root-is-var-www-or-var-www-html
+	perl -e 'if (!-d "$(WEB_SERVER_DATA)") {print "error: WEB_SERVER_DATA = $(WEB_SERVER_DATA) in Makefile, but that directory does not exist; edit the Makefile and set this correctly for your server, e.g., to /var/www"; exit(-1)}'
 	perl -e 'if (-e "$(NEW_TINT)") {system("cp $(NEW_TINT) .")}'
 	install -d $(JS)
 	install -d $(CGI)

@@ -1,4 +1,6 @@
 # Run this test suite using the command
+#               make test
+#       or
 #		./Calc.pl -pc -i testsuite -o testsuite.out
 # Most tests are designed to output true (1) if the test
 # succeeded. Can diff against an old version to tell if a
@@ -46,8 +48,7 @@ x2=3; x2+2 eq 5	# Test that variables that end in digits are parsed correctly.
 #------------------------------------------------
 |-1| eq 1
     1
-(2,3) eq 3		# comma operator just leaves both on stack
-    1
+#(2,3) eq 3		# comma operator just leaves both on stack; this test no longer works, because I now generate an error when the stack doesn't get completely slurped up by the end of the calculation
 (2+2) eq 4
     1
 (+2) eq (0+2)	# unary plus
@@ -332,6 +333,18 @@ units(4 m) eq units(5 m)
     1
 (13 in) mod (1 ft) eq (1 in)
     1
+# test constructor for Rational, in the case of negative input:
+(1 m)^-1 eq (1 m-1)
+    1
+# more similar tests; integers:
+(1 m)^2 eq (1 m2)
+    1
+# half-integers (special-cased for performance):
+[(1 m)^(1/2)]^2 eq (1 m)
+    1
+# other rationals:
+[(1 m)^(3/2)]^2 eq (1 m3)
+    1
 #------------------------------------------------
 # A bug fix. Before I fixed this bug, expressions
 # like 5 sin x were not interpreted as implied
@@ -395,3 +408,13 @@ f=1; g=1; f + g eq 2
     g = 1
     1
 #
+#------------------------------------------------
+# Test for a bug involving factorial operator and implicit multiplication.
+# In the expression 2!1, there was no implicit multiplication being generated.
+# The following should now generate a complaint about writing a number on the
+# right in implied multiplication; before the bug was fixed, it gave 1 as the result rather than 2.
+#------------------------------------------------
+2!1 eq 2
+Error: Don't write implied multiplication with a number on the right, e.g., write 2x, not x2, because x2 could mean x squared. Possible fixes: (a) if you meant multiplication, eliminate the ambiguity by adding parentheses, e.g., (!)(1); or (b) if you meant multiplication, rewrite !1 as 1!; or (c) if you meant exponentiation, rewrite !1 as !^1.
+  2!1  
+    

@@ -193,6 +193,7 @@ sub evaluate{
     }
   }
   my $result = pop(@stack);
+  if (@stack>0) {push @errors,"e:stack_not_emptied"}
   if (!is_null_string($result) && ref($result) eq "Measurement") {
     #$result=promote_to_measurement($result);
     if ($prettify_units) {
