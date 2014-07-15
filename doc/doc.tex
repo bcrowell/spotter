@@ -452,6 +452,34 @@ from the calculator. The calculator has command-line options, which are
 documented at the top of the source code. A line can end with a comment,
 marked by a pound sign, \verb@#@.
 
+\mysubsection{special values}
+The symbols \verb@undef@ and \verb@inf@ stand can be used to create four special
+values. The following table shows the syntax for expressing those values, their
+mathematical meanings, and examples of problems for which they would be the correct
+answer.
+
+\begin{tabular}{lll}
+\verb@undef@ & undefined & $\lim_{x\rightarrow\infty} \sin x$ \\
+\verb@inf@   & $\infty$  & $\lim_{x\rightarrow0} 1/x$ \\
+\verb@+inf@  & $+\infty$ & $\lim_{x\rightarrow\infty} \ln x$ \\
+\verb@-inf@  & $-\infty$ & $\lim_{x\rightarrow{0^+}} \ln x$ 
+\end{tabular}
+
+The four categories are modeled on the ones used by the computer algebra system Maxima.
+Values lower in the table can be thought of as more specific cases of the ones higher up.
+For example, \verb@-inf@ is also infinite and undefined. These four values can only be
+constructed using the very special syntaxes listed here (or some nearly identical ones
+such as \verb@(-inf)@). For example, the expression \verb@1/0@ simply produces an error,
+not a result of \verb@inf@ or \verb@undef@. Note that unary \verb@+@ is a nontrivial
+operation when applied to \verb@inf$.
+
+When the correct answer to a question is one of these special values, the student
+must match it exactly. For example, if the correct answer is \verb@-inf@, a student
+answer of \verb@inf@ is incorrect. However, you can provide helpful feedback for
+that particular incorrect answer.
+
+Filters cannot be used with special values. Special values can't have units.
+
 \mysection{Creating an Answer File}\label{answerfile}
 \mysubsection{writing up a problem}
 The following is a sample of how to write an entry in the answer file

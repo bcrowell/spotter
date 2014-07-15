@@ -245,3 +245,11 @@ f=1; g=1; f + g eq 2
 # right in implied multiplication; before the bug was fixed, it gave 1 as the result rather than 2.
 #------------------------------------------------
 2!1 eq 2
+#------------------------------------------------
+# Nonstandard results. The following should not give errors. They should just stringify properly.
+#------------------------------------------------
+inf
+undef
++inf
+-inf
+(+inf)

@@ -295,6 +295,9 @@ sub identical_answer {
     $x =~ s/\~/\($their_string\)/g;
     $their_string = $x;
 
+    # If there is no filter, the expression still gets wrapped in (). This is OK if special
+    # values are involved, since, e.g., (+inf) is a legal syntax for +inf.
+
   if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"in identical answer, 200")}
   # Parse their expression:
     my $their_expression = Expression->new(EXPR=>$their_string,OUTPUT_MODE=>"html",
@@ -448,20 +451,78 @@ sub identical_answer {
           			$our_expression->{HAS_EVAL_ERRORS}."=".
    					"<br/>";
         }
-        else {
+        else { # our expression doesn't have errors
           if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"in identical answer, evaluating their result")}
           my $their_result = Measurement::promote_to_measurement($their_expression->evaluate());
           if ($their_expression->has_errors()) {
             $disagreed = 1;
             $flags{EVAL_ERROR} = 1;
           }
-          else {
-           my $compat = Measurement::compatible_units($their_result,$our_result,\%Spotter::standard_units);
+          else { # neither their expression nor ours has errors
+            ($flags{UNITS_DISAGREE},$flags{NUMERICAL_DISAGREEMENT},$disagreed,$disagreed_this_time,
+                      $our_first,$their_first) = 
+              compare_samples_that_have_no_errors(
+                $our_result,$their_result,$relative_filter,$canned_answer,$disagreed,$disagreed_this_time,
+                $i==1,$our_first,$their_first
+              );
+          } # end if neither has errors
+        }
+      } # end loop over $i
+   }
+  
+  if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"in identical answer, 500")}
+  if ($internal_error) {Log_file::write_entry(TEXT=>$internal_msg); return ("in","",$internal_msg)}
+  if (!$disagreed) {return ("eq","","")}
+  my $msg = "";
+  # Should improve the following so it passes on actual messages from the parser:
+  if (exists($flags{EVAL_ERROR})) {return("er"," error evaluating","")}
+  if (exists($flags{NUMERICAL_DISAGREEMENT})) {return("va","","")}
+  if (exists($flags{UNITS_DISAGREE})) {return("un","","")}
+}
+
+sub compare_samples_that_have_no_errors {
+  my ($our_result,$their_result,$relative_filter,$canned_answer,$disagreed,$disagreed_this_time,
+           $first_sample,$our_first,$their_first) = @_;
+  my ($units_disagree,$numerical_disagreement) = (0,0);
+           my $ours_is_nonstandard = $our_result->is_nonstandard();
+           my $theirs_is_nonstandard = $their_result->is_nonstandard();
+           my $ns = $ours_is_nonstandard || $theirs_is_nonstandard;
+           # It's syntactically impossible to specify a value such as +inf kg. If, e.f., we specify 1 kg
+           # and they enter +inf, then the correct response is that they're unequal, not that they
+           # have incompatible units.
+           my $compat = $ns || Measurement::compatible_units($their_result,$our_result,\%Spotter::standard_units);
            if (!$compat && defined $compat) {
              $disagreed = 1;
-             $flags{UNITS_DISAGREE} = 1;
+             $units_disagree = 1;
             }
             else {
+              if ($ns && !($our_result->same_nonstandard_result($their_result))) {
+                  $disagreed=1;
+                  $numerical_disagreement = 1;
+                  last;
+              }
+              my $theirs_converted;
+              ($disagreed,$disagreed_this_time,$theirs_converted)
+                     = compare_numerically($our_result,$their_result,$relative_filter,$canned_answer,
+                                           $disagreed,$disagreed_this_time,$first_sample,
+                                           $our_first,$their_first);
+
+              if ($first_sample) {
+                $their_first = $theirs_converted;
+                $our_first   = $our_result;
+              }
+              if ($disagreed_this_time && ($relative_filter eq '' || !$first_sample)) {
+                  $disagreed = 1;
+                  $numerical_disagreement = 1;
+              }
+
+            }
+  return ($units_disagree,$numerical_disagreement,$disagreed,$disagreed_this_time,$our_first,$their_first);  
+}
+
+sub compare_numerically {
+  my ($our_result,$their_result,$relative_filter,$canned_answer,$disagreed,$disagreed_this_time,
+        $first_sample,$our_first,$their_first) = @_;
               my $theirs_converted = Measurement::convert($their_result,$our_result,\%Spotter::standard_units);
               my $our_plain = $our_result;
               if (ref($our_plain) eq "Measurement") {$our_plain = $our_plain->number()}
@@ -475,21 +536,47 @@ sub identical_answer {
                 $disagreed = 1;
               }
               if ($canned_answer->tol_type() eq "mult" && $our_plain!=0 && $their_plain!=0) {
+                if ($relative_filter ne '' && !$first_sample) {
+                  ($theirs_converted,$our_result) = 
+                        handle_relative_filtering($our_result,$their_result,$theirs_converted,$our_plain,
+                                                    $their_plain,$relative_filter,$our_first,$their_first);
+                }
+                $disagreed_this_time = 
+                  compare_multiplicatively_both_nonzero(
+                              $our_result,$their_result,$theirs_converted,$our_plain,$their_plain,
+                              $canned_answer);
+              }
 
-                #SpotterHTMLUtil::debugging_output("identical_answer(): i=$i, theirs_converted=$theirs_converted, our_result=$our_result"); #qwe
-                # Handly any relative filtering:
-                  if ($relative_filter ne '' && $i>1) {
-                    # $our_plain==0 $their_plain==0
-                    if ($relative_filter eq '-') {
-                      $theirs_converted = $theirs_converted - $their_first;
-                      $our_result = $our_result - $our_first;
-                    }
-                    if ($relative_filter eq '/' && $our_plain!=0 && $their_plain!=0) {
-                      $theirs_converted = $their_first/$theirs_converted;
-                      $our_result = $our_first/$our_result;
-                    }
-                  }
-                #SpotterHTMLUtil::debugging_output("identical_answer(): i=$i, theirs_converted=$theirs_converted, our_result=$our_result"); #qwe
+
+              if ($canned_answer->tol_type() eq "add") {
+                my $diff = $theirs_converted-$our_result;
+                # The 1.0000001 here is so that, e.g., 2.5+-0.5 is guaranteed to include 3.0.
+                if (abs($diff->number())>($canned_answer->tol())*1.0000001) {
+                  $disagreed_this_time = 1;
+                }
+              }
+
+  return ($disagreed,$disagreed_this_time,$theirs_converted);
+}
+
+sub handle_relative_filtering {
+  my ($our_result,$their_result,$theirs_converted,$our_plain,$their_plain,$relative_filter,
+           $our_first,$their_first) = @_;
+  if ($relative_filter eq '-') {
+    $theirs_converted = $theirs_converted - $their_first;
+    $our_result = $our_result - $our_first;
+  }
+  if ($relative_filter eq '/' && $our_plain!=0 && $their_plain!=0) {
+    $theirs_converted = $their_first/$theirs_converted;
+    $our_result = $our_first/$our_result;
+  }
+  return ($theirs_converted,$our_result);
+}
+
+sub compare_multiplicatively_both_nonzero {
+  my ($our_result,$their_result,$theirs_converted,$our_plain,$their_plain,$canned_answer) = @_;
+
+                my $disagreed_this_time = 0;
 
                 # Figure out the magnitude and argument of theirs/ours:
                   my $ratio = $theirs_converted/$our_result;
@@ -504,8 +591,6 @@ sub identical_answer {
                 # Figure out if theirs is real:
                   my $theirs_is_real = (ref($their_plain) eq "Complex" && Math::Complex::Im($their_plain)==0)
                     || !ref($their_plain);
-
-                $disagreed_this_time = 0;
 
                 # Figure out if magnitudes disagree:
                   my $epsilon = $canned_answer->tol();
@@ -526,39 +611,7 @@ sub identical_answer {
                     }
                   }
 
-              }
-
-              if ($canned_answer->tol_type() eq "add") {
-                my $diff = $theirs_converted-$our_result;
-                # The 1.0000001 here is so that, e.g., 2.5+-0.5 is guaranteed to include 3.0.
-                if (abs($diff->number())>($canned_answer->tol())*1.0000001) {
-                  $disagreed_this_time = 1;
-                }
-              }
-
-              if ($i==1) {
-                $their_first = $theirs_converted;
-                $our_first   = $our_result;
-              }
-              if ($disagreed_this_time && ($relative_filter eq '' || $i!=1)) {
-                  $disagreed = 1;
-                  $flags{NUMERICAL_DISAGREEMENT} = 1;
-              }
-
-            }
-          }
-        }
-      }
-   }
-  
-  if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"in identical answer, 500")}
-  if ($internal_error) {Log_file::write_entry(TEXT=>$internal_msg); return ("in","",$internal_msg)}
-  if (!$disagreed) {return ("eq","","")}
-  my $msg = "";
-  # Should improve the following so it passes on actual messages from the parser:
-  if (exists($flags{EVAL_ERROR})) {return("er"," error evaluating","")}
-  if (exists($flags{NUMERICAL_DISAGREEMENT})) {return("va","","")}
-  if (exists($flags{UNITS_DISAGREE})) {return("un","","")}
+              return $disagreed_this_time;
 }
 
 sub rand_cplx {

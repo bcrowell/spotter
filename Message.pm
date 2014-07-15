@@ -172,6 +172,9 @@ sub get_error_form {
   if ($code eq "add_incompatible_units") {return "You can't ~0 quantities that don't have the same units.".
                                                  " This may indicate an error in your algebra, or a mistake in how you input your expression, e.g.,".
                                                  " entering a+b/c+d when you intended (a+b)/(c+d)."}
+
+  # evaluator: nonstandard values
+  if ($code eq "illegal_nonstandard") {return "The only legal expressions that can be constructed from the symbols undef and inf are the following: undef, inf, +inf, and -inf."}
   
   return $code;
 }

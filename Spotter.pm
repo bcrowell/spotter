@@ -74,11 +74,17 @@ $VERSION = 0.1;
 	&is_null_string
 );
 
-%Spotter::standard_cons_hash = 
-	("pi"=>Measurement->new(pi),
+%Spotter::standard_cons_hash = (
+        # pi supplied by Math::Trig, i by Math::Complex
+	"pi"=>Measurement->new(pi),
 	"e"=>Measurement->new(exp(1.)),
-	"i"=>Measurement->new(i));
-			# ... pi supplied by Math::Trig, i by Math::Complex
+	"i"=>Measurement->new(i),
+        # the numerical values of the following two are arbitrary, unspecified; they don't
+        #    need to have their nonstandard_flag set, because that flag is only a property of
+        #    results, not variables; the evaluator knows they're special simply because of their names
+        "undef"=>Measurement->new(1),
+        "inf"=>Measurement->new(1),
+);
 @Spotter::standard_cons = keys(%Spotter::standard_cons_hash);
 %Spotter::standard_funs_hash = (
   "exp"=>\&Math::Complex::exp,

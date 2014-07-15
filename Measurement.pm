@@ -49,6 +49,7 @@ sub new {
   my $self = {};
   bless($self,$classname);
   $self->number(shift);
+  $self->nonstandard_flag(0);
   if (@_) {
     $self->units(shift);
   }
@@ -58,7 +59,6 @@ sub new {
   $self->simplify;
   return $self;
 }
-
 
 sub parse {
   my $x = shift;
@@ -228,6 +228,11 @@ sub simplify {
 sub stringify {
   my $self = shift;
   my $debug = 0;
+
+  if ($self->belongs_to_nonstandard_set('undef')) {return $self->stringify_nonstandard_type()}
+    # There's no syntax that would allow us to construct things like +inf kilograms, so no need to allow
+    # for that. 
+
   my $result = "";
   if (Eval::is_undef($self)) {
 	  $result = "?";
@@ -420,6 +425,53 @@ sub parse_prefixed_unit {
   else {
     return ("",$u);
   }
+}
+
+sub nonstandard_flag { # private method
+  my $self = shift;
+  if (@_) {$self->{NONSTANDARD_FLAG} = shift;}
+  return $self->{NONSTANDARD_FLAG};
+}
+
+sub set_nonstandard_set { # public method
+  my $self = shift;
+  my $set = shift; # 'defined','undef','inf','+inf', or '-inf'
+  $self->nonstandard_flag($self->nonstandard_name_to_hex($set));  
+}
+
+sub nonstandard_name_to_hex { # private method
+  my $self = shift;
+  my $set = shift; # 'defined','undef','inf','+inf', or '-inf'
+  return {'defined'=>0x0,'undef'=>0x8,'inf'=>0xc,'+inf'=>0xe,'-inf'=>0xf}->{$set};
+}
+
+sub stringify_nonstandard_type { # public method
+  my $self = shift;
+  my $f = $self->nonstandard_flag();
+  return {0x0=>'defined',0x8=>'undef',0xc=>'inf',0xe=>'+inf',0xf=>'-inf'}->{$f};
+}
+
+sub is_nonstandard { # public method
+  my $self = shift;
+  return $self->nonstandard_flag()!=0;
+}
+
+sub same_nonstandard_type { # public method
+  my $self = shift;
+  my $other = shift;
+  return $self->nonstandard_flag()==$other->nonstandard_flag();
+}
+
+sub belongs_to_nonstandard_set { # public method
+  my $self = shift;
+  my $set = shift; # 'defined','undef','inf','+inf', or '-inf'
+  my $f = $self->nonstandard_flag();
+  if ($set eq 'defined') {return $f==0}
+  if ($set eq 'undef')   {return ($f & 0x8)!=0}
+  if ($set eq 'inf')     {return ($f & 0x4)!=0}
+  if ($set eq '+inf')    {return $f==0xe}
+  if ($set eq '-inf')    {return $f==0xf}
+  return undef;
 }
 
 #==================================================================

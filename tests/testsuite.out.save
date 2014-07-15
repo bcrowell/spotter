@@ -418,3 +418,16 @@ f=1; g=1; f + g eq 2
 Error: Don't write implied multiplication with a number on the right, e.g., write 2x, not x2, because x2 could mean x squared. Possible fixes: (a) if you meant multiplication, eliminate the ambiguity by adding parentheses, e.g., (!)(1); or (b) if you meant multiplication, rewrite !1 as 1!; or (c) if you meant exponentiation, rewrite !1 as !^1.
   2!1  
     
+#------------------------------------------------
+# Nonstandard results. The following should not give errors. They should just stringify properly.
+#------------------------------------------------
+inf
+    inf
+undef
+    undef
++inf
+    +inf
+-inf
+    -inf
+(+inf)
+    +inf

@@ -123,6 +123,8 @@ sub evaluate{
   
   if ($debug) {print "in evaluate, cons_hash=@{[%cons_hash]}\n";}
   if ($debug) {print "in evaluate, pats=$funs_pat,$cons_pat,$vars_pat\n";}
+
+  if (rpn_contains_nonstandard($rpn_ref)) {return evaluate_rpn_containing_nonstandard($rpn_ref)}
   
   for (my $k=0; $k<=$#rpn; $k++) {
     my $token = $rpn[$k];
@@ -200,6 +202,33 @@ sub evaluate{
       $result=$result->prettify_units($units_ref);
     }
   }
+  return ($result,\@errors);
+}
+
+sub rpn_contains_nonstandard {
+  my $rpn_ref = shift;
+  my @rpn = @$rpn_ref;
+  for (my $k=0; $k<=$#rpn; $k++) {
+    my $token = $rpn[$k];
+    if ($token eq 'undef' || $token eq 'inf') {return 1}
+  }
+  return 0;
+}
+
+sub evaluate_rpn_containing_nonstandard {
+  my $rpn_ref = shift;
+  my @rpn = @$rpn_ref;
+  my @errors = ();
+  my $s = join(' ',@rpn);
+  my $legal = 0;
+  my $set;
+  if ($s eq 'undef')          {$legal=1; $set='undef'}
+  if ($s eq 'inf')            {$legal=1; $set='inf'}
+  if ($s eq '__zero inf +')   {$legal=1; $set='+inf'}
+  if ($s eq '__zero inf -')   {$legal=1; $set='-inf'}
+  if (!$legal) {push @errors,"e:illegal_nonstandard"; return (undef,\@errors)}
+  my $result = Measurement->new(1); # numerical value is unspecified
+  $result->set_nonstandard_set($set);
   return ($result,\@errors);
 }
 
@@ -446,7 +475,11 @@ sub base_units {
 	return $y->units;
 }
 
-# This sub is duplicated in Crunch.pm.
+# This sub is duplicated in Crunch.pm. This is different from belonging to the nonstandard_set
+# 'undef'.
+#   is_undef : there was an error, e.g., a syntax error; stringifies as '?'
+#   belongs_to_nonstandard_set('undef') : is a possibly correct answer which may belong to a subset
+#              such as +inf
 sub is_undef {
   my $x = shift;
   return (ref($x) eq "" && $x eq "?") || (ref($x) eq "Measurement" && is_undef($x->number));
