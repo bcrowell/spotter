@@ -459,12 +459,15 @@ sub identical_answer {
             $flags{EVAL_ERROR} = 1;
           }
           else { # neither their expression nor ours has errors
-            ($flags{UNITS_DISAGREE},$flags{NUMERICAL_DISAGREEMENT},$disagreed,$disagreed_this_time,
+            my ($units_disagree,$numerical_disagreement);
+            ($units_disagree,$numerical_disagreement,$disagreed,$disagreed_this_time,
                       $our_first,$their_first) = 
               compare_samples_that_have_no_errors(
                 $our_result,$their_result,$relative_filter,$canned_answer,$disagreed,$disagreed_this_time,
                 $i==1,$our_first,$their_first
               );
+            if ($units_disagree) {$flags{UNITS_DISAGREE}=1}
+            if ($numerical_disagreement) {$flags{NUMERICAL_DISAGREEMENT}=1}
           } # end if neither has errors
         }
       } # end loop over $i
