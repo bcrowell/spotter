@@ -96,7 +96,7 @@ sub answer_response {
     }
     if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"answer_response 220")}
     $student_expression->vars_ref(\%meas_hash);
-    my $ev = $student_expression->evaluate(); # may return measurement or string - qwe
+    my $ev = $student_expression->evaluate(); # may return measurement or string
     $parse_error = $student_expression->has_errors();
     if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"answer_response 230")}
     if ($parse_error) {
@@ -169,7 +169,7 @@ sub answer_response {
         }
       }
     }
-    if ($result eq "") {$result = $fallback_result;} # qwe
+    if ($result eq "") {$result = $fallback_result;}
     if ($result eq "") {$result = "<p>Incorrect</p>\n"}
     
     if ($result eq "?") {
@@ -496,26 +496,25 @@ sub compare_samples_that_have_no_errors {
              $units_disagree = 1;
             }
             else {
-              if ($ns && !($our_result->same_nonstandard_result($their_result))) {
+              if ($ns && !($our_result->same_nonstandard_type($their_result))) {
                   $disagreed=1;
                   $numerical_disagreement = 1;
-                  last;
               }
-              my $theirs_converted;
-              ($disagreed,$disagreed_this_time,$theirs_converted)
+              else {
+                my $theirs_converted;
+                ($disagreed,$disagreed_this_time,$theirs_converted)
                      = compare_numerically($our_result,$their_result,$relative_filter,$canned_answer,
                                            $disagreed,$disagreed_this_time,$first_sample,
                                            $our_first,$their_first);
-
-              if ($first_sample) {
-                $their_first = $theirs_converted;
-                $our_first   = $our_result;
+                if ($first_sample) {
+                  $their_first = $theirs_converted;
+                  $our_first   = $our_result;
+                }
+                if ($disagreed_this_time && ($relative_filter eq '' || !$first_sample)) {
+                    $disagreed = 1;
+                    $numerical_disagreement = 1;
+                }
               }
-              if ($disagreed_this_time && ($relative_filter eq '' || !$first_sample)) {
-                  $disagreed = 1;
-                  $numerical_disagreement = 1;
-              }
-
             }
   return ($units_disagree,$numerical_disagreement,$disagreed,$disagreed_this_time,$our_first,$their_first);  
 }
