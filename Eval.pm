@@ -372,8 +372,18 @@ sub do_binary_op {
 			  push @$errors_ref,"e:zero_exp_zero".$back_ref;
 			}
 			else {
-			  $result = Measurement::expon($a,$b,$units_def_ref);
-                          if (is_null_string($result)) {push @$errors_ref,"e:expon_err".$back_ref}
+                          if ($a->is_zero) {
+                            if ($b->is_positive_real) {
+                              $result = 0;
+                            }
+                            else {
+                              push @$errors_ref,"e:zero_base_not_pos_exp".$back_ref;
+                            }
+                          }
+                          else {
+                            $result = Measurement::expon($a,$b,$units_def_ref);
+                            if (is_null_string($result)) {push @$errors_ref,"e:expon_err".$back_ref}
+                          }
 			}
 		  }
 	  } # end if not unary sub

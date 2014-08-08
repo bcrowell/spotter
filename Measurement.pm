@@ -108,6 +108,18 @@ sub number_cplx {
   return Crunch::promote_cplx($value);
 }
 
+sub is_real {
+  my $self = shift;
+  my $z = $self->number_cplx();
+  return Im($z)==0;
+}
+
+sub is_positive_real {
+  my $self = shift;
+  my $z = $self->number_cplx();
+  return Im($z)==0 && Re($z)>0;
+}
+
 sub is_zero {
   my $self = shift;
   if (ref($self) ne "Measurement") {

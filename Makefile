@@ -3,8 +3,8 @@ VERSION = 3.0.3
 
 CGI_GENERAL = /usr/lib/cgi-bin
 WEB_SERVER_GROUP = www-data
-WEB_SERVER_DATA = /var/www/html
-   # ... was /var/www on debian until ca. 2014
+WEB_SERVER_DATA = /var/www
+   # ... was /var/www on debian until ca. 2014, then changed to /var/www/html
 CGI = $(CGI_GENERAL)/spotter3
    # ... can coexist on the same server with an installation of spotter 2.x
 ANSWERS = $(CGI)/answers

@@ -167,6 +167,7 @@ sub get_error_form {
   if ($code eq "div_by_zero") {return "division by zero"}
   if ($code eq "mod_by_zero") {return "mod by zero"}
   if ($code eq "zero_exp_zero") {return "0^0 is undefined."}
+  if ($code eq "zero_base_not_pos_exp") {return "0^z is undefined when z is not real and positive."}
   if ($code eq "illegal_op_with_units") {return "Illegal operation with units. Typically you should write a number, followed by a blank, followed by the units."}
   if ($code eq "unit_binary_logical") {return "The and, or, and xor operators require both operands to be unitless."}
   if ($code eq "add_incompatible_units") {return "You can't ~0 quantities that don't have the same units.".
