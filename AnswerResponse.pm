@@ -487,6 +487,7 @@ sub compare_samples_that_have_no_errors {
   my ($our_result,$their_result,$relative_filter,$canned_answer,$disagreed,$disagreed_this_time,
            $first_sample,$our_first,$their_first) = @_;
   my ($units_disagree,$numerical_disagreement) = (0,0);
+           my $debug = 0;
            my $ours_is_nonstandard = $our_result->is_nonstandard();
            my $theirs_is_nonstandard = $their_result->is_nonstandard();
            my $ns = $ours_is_nonstandard || $theirs_is_nonstandard;
@@ -499,6 +500,7 @@ sub compare_samples_that_have_no_errors {
              $units_disagree = 1;
             }
             else {
+              if ($debug) {my $diff=$their_result-$our_result; Log_file::write_entry(TEXT=>"in compare_samples_that_have_no_errors, our=$our_result, theirs=$their_result, diff=$diff")}
               if ($ns && !($our_result->same_nonstandard_type($their_result))) {
                   $disagreed=1;
                   $numerical_disagreement = 1;
@@ -525,6 +527,7 @@ sub compare_samples_that_have_no_errors {
 sub compare_numerically {
   my ($our_result,$their_result,$relative_filter,$canned_answer,$disagreed,$disagreed_this_time,
         $first_sample,$our_first,$their_first) = @_;
+           my $debug = 0;
               my $theirs_converted = Measurement::convert($their_result,$our_result,\%Spotter::standard_units);
               my $our_plain = $our_result;
               if (ref($our_plain) eq "Measurement") {$our_plain = $our_plain->number()}
@@ -547,6 +550,7 @@ sub compare_numerically {
                   compare_multiplicatively_both_nonzero(
                               $our_result,$their_result,$theirs_converted,$our_plain,$their_plain,
                               $canned_answer);
+                if ($debug) {Log_file::write_entry(TEXT=>"in compare_numerically, our=$our_result, theirs=$their_result, disagreed_this_time=$disagreed_this_time")}
               }
 
 
@@ -578,12 +582,14 @@ sub handle_relative_filtering {
 sub compare_multiplicatively_both_nonzero {
   my ($our_result,$their_result,$theirs_converted,$our_plain,$their_plain,$canned_answer) = @_;
 
+           my $debug = 0;
+
                 my $disagreed_this_time = 0;
 
                 # Figure out the magnitude and argument of theirs/ours:
                   my $ratio = $theirs_converted/$our_result;
                   my $ratio_with_phase = Crunch::promote_cplx($ratio->number());
-                  my $ratio_arg = Math::Complex::arg($ratio_with_phase);
+                  my $ratio_arg = abs(Math::Complex::arg($ratio_with_phase));
                   my $ratio_mag = Math::Complex::abs($ratio_with_phase);
 
                 # Figure out if ours is real:
@@ -605,6 +611,7 @@ sub compare_multiplicatively_both_nonzero {
 
                 # Even if the magnitudes agreed, we may have to do more:
                   if (!$disagreed_this_time) {
+                    if ($debug) {Log_file::write_entry(TEXT=>"in compare_multiplicatively_both_nonzero, magnitudes agreed")}
                     if ($ours_is_real && !$theirs_is_real) {
                       $disagreed_this_time = ($ratio_arg>$epsilon) || ($ratio_arg>0.00001);
                     }
