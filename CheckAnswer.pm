@@ -7,7 +7,7 @@ sub handle_mathematical_answer {
         my ($answer_param,$p,$login,$xmlfile,$hierarchy,$data_dir,$tree) = @_;
         my $output = '';
         my ($messages, $ans,$unit_list, $units_allowed,$vars) = poke_and_prod_student_answer($answer_param,$p);
-        SpotterHTMLUtil::debugging_output("in handle_mathematical_answer, ref(tree)=".ref($tree)."="); # qwe
+        # SpotterHTMLUtil::debugging_output("in handle_mathematical_answer, ref(tree)=".ref($tree)."=");
         $output = $output . $messages;
         my ($query,$ip,$date_string,$throttle_dir,$when,$who,$query_sha1,
                             $exempt,$anon_forbidden,$forbidden_because_anon,$throttle_ok,$throttle_message,$problem_label) 

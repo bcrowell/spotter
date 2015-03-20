@@ -87,6 +87,11 @@ sub answer_response {
       my $sym = $vbl_list[$j];
       my $var = $vbl_hash{$sym};
       my $x = rand_cplx($var->min(),$var->max(),$var->min_imag(),$var->max_imag());
+      if (0) { # Shows this feature is broken. Parser doesn't seem to handle it.
+        my $r0 = $var->min();
+        my $r1 = $var->max();
+        Log_file::write_entry(TEXT=>"sym=$sym, x=$x, min=$r0, max=$r1");
+      }
       $meas_hash{$sym} = Measurement->new($x,$var->parsed_units());
       delete($Spotter::standard_cons_hash{$sym});
           	# ...this is obviously stupid, but I have to do it because I've implemented

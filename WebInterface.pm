@@ -1066,6 +1066,8 @@ sub do_answer_check {
   foreach my $var(@$var_list) {
     my $v = Vbl->new($var->{'sym'});
     $v->units($var->{'units'}) if exists $var->{'units'};
+    $v->min($var->{'min'}) if exists $var->{'min'};
+    $v->max($var->{'max'}) if exists $var->{'max'};
     $p->add_vbl($v);
   }
   foreach my $ans(@$ans_list) {
