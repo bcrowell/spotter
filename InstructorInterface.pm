@@ -76,12 +76,13 @@ our $session;
 InstructorInterface->authen->config(
   DRIVER => [ 'Generic', sub {
     my ($username, $password) = @_;
-    my $tree = tree();
-    my $hashed = $tree->get_par_from_file($tree->student_info_file_name($username),'password');
-    if (Login::hash(Login::salt().$password) eq $hashed) { return $username } else {return undef}
+    if ($password eq "foo" && $username eq "bcrowell") {return $username} else {return undef}
+    # my $tree = tree();
+    # my $hashed = $tree->get_par_from_file($tree->student_info_file_name($username),'password');
+    # if (Login::hash(Login::salt().$password) eq $hashed) { return $username } else {return undef}
   } ],
   POST_LOGIN_RUNMODE => 'do_logged_in',
-  LOGIN_RUNMODE => 'public_do_login_form',
+  LOGIN_RUNMODE => 'public_log_in',
   LOGOUT_RUNMODE => 'do_log_out',
   STORE => ['Cookie',
         NAME   => 'login',
@@ -96,7 +97,7 @@ sub setup {
   $early_debug = $early_debug . "login=form=".Url::par_is("login","form")."=\n";
   $early_debug = $early_debug . "login=".Url::par("login")."=\n";
   $early_debug = $early_debug . "self->authen->username=".($self->authen->username)."=\n";
-  my $run_mode = 'public_do_login_form';
+  my $run_mode = 'public_log_in';
   if (($self->authen->username)=~/\w/) { # passes this test when it shouldn't
     # $run_mode = 'do_logged_in';
   }
@@ -104,7 +105,7 @@ sub setup {
   if (Url::par_is("login","entered_password") && ! (($self->authen->username)=~/\w/)) { $run_mode = 'public_log_in'}
   $self->start_mode($run_mode);
   $self->run_modes([qw/
-    public_do_login_form
+    public_log_in
     public_log_in
     do_logged_in
     do_log_out
@@ -134,7 +135,7 @@ sub session_id {
 # run modes
 #========================================================================================================
 
-sub public_do_login_form {
+sub public_log_in {
   my $self = shift;
 
   my $login = Login->new('',0);
@@ -152,7 +153,7 @@ sub public_do_login_form {
     }
   }
   $session->param('referer',$referer);
-  return run_interface($login,'public_do_login_form',0,$session);
+  return run_interface($login,'public_log_in',0,$session);
 }
 
 sub public_log_in {
@@ -224,7 +225,7 @@ sub run_interface {
   if ($run_mode eq 'do_log_out' || $run_mode eq 'public_anonymous_use') {$session->delete()}
 
   $out = $out . "run mode = $run_mode<p>";
-  if ($run_mode eq 'public_do_login_form') {$out = $out . do_login_form()}
+  if ($run_mode eq 'public_log_in') {$out = $out . do_login_form()}
 
   $session->flush();
 
@@ -343,7 +344,7 @@ sub do_function {
   my $run_mode = shift;
 
   if ($run_mode eq 'public_log_in' || $run_mode eq 'public_roster') {
-    $out = $out .  public_do_login_form();
+    $out = $out .  public_log_in();
   }
 
   if ($run_mode eq 'do_log_out' && $session->param('referer')) {
