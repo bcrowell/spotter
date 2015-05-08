@@ -1,0 +1,20 @@
+--Some of the following is based on what the CGI::Application::Plugin::Authentication does:
+--"If you plan to create your own login page, I would recommend that you start with the HTML code for the default login
+--page, so that your login page will contain the correct form fields and hidden fields."
+-- The hidden form fields are:
+--  destination (the url we're going to)
+--  some more that don't seem to matter
+-- The other fields it wants are:
+--   authen_password (changed from my password)
+--   authen_username (changed from my username)
+
+password_form = <<__html__
+<form method="POST" action="$url">
+  <input type="hidden" name="authen_username" value="$username">
+  <input type="hidden" name="destination" value="$url" />
+  Password:
+    <input type="password" name="authen_password" size="20" maxlength="20"><br>
+  <input type="submit" value="Log in.">
+</form>
+<p>
+__html__

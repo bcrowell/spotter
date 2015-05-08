@@ -10,7 +10,7 @@
 #----------------------------------------------------------------
 
 # accessed like this:
-#   http://www.lightandmatter.com/cgi-bin/spotter3/SpotterInstructor.cgi?login=form&class=bcrowell/s2015/205
+#   www.lightandmatter.com/cgi-bin/spotter3/SpotterInstructor.cgi?user=bcrowell
 
 use strict;
 use InstructorInterface;

@@ -24,6 +24,7 @@ sub link {
     REPLACE_WITH2 => "",
     REPLACE3 => "",
     REPLACE_WITH3 => "",
+    INTERFACE => "WebInterface",
     @_,
   );
     
@@ -85,7 +86,16 @@ sub link {
     $q =~ s/$r=[^=\&]*/$r=$rw/;
   }
 
-  unless ($q=~/sid=/) {$q = $q . "&sid=".WebInterface::session_id();} # make sure it always has this
+  unless ($q=~/sid=/) {
+    my $sid;
+    if ($args{INTERFACE} eq "WebInterface") {
+      $sid = WebInterface::session_id();
+    }
+    if ($args{INTERFACE} eq "InstructorInterface") {
+      $sid = InstructorInterface::session_id();
+    }
+    $q = $q . "&sid=$sid";
+  } # make sure it always has this
   
   # Tidy up.
   $q =~ s/\&\&+/\&/g; # replace && with &

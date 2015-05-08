@@ -81,15 +81,12 @@ InstructorInterface->authen->config(
     if (Login::hash(Login::salt().$password) eq $hashed) { return $username } else {return undef}
   } ],
   POST_LOGIN_RUNMODE => 'do_logged_in',
-  LOGIN_RUNMODE => 'public_log_in',
+  LOGIN_RUNMODE => 'public_do_login_form',
   LOGOUT_RUNMODE => 'do_log_out',
   STORE => ['Cookie',
         NAME   => 'login',
         SECRET => 'not really so secret', # for my application, I don't care if they can forge a cookie
-        EXPIRY => '+1d', # Not very relevant. If they're at home, presumably they're starting from the class's web page,
-                        # so they have to log in every time. If they're at school and promiscuously sharing a browser,
-                        # there's basically nothing I can do to prevent them from mistakenly putting in their answer
-                        # while logged in as someone else.
+        EXPIRY => '+1d',
     ],
 );
 InstructorInterface->authen->protected_runmodes(qr/^(?!public_)/); # runmodes not starting with public_ are protected
@@ -99,14 +96,9 @@ sub setup {
   $early_debug = $early_debug . "login=form=".Url::par_is("login","form")."=\n";
   $early_debug = $early_debug . "login=".Url::par("login")."=\n";
   $early_debug = $early_debug . "self->authen->username=".($self->authen->username)."=\n";
-  my $run_mode = 'public_anonymous_use';
+  my $run_mode = 'public_do_login_form';
   if (Url::par_is("login","form")) {
-    if (Url::par_set("username")) {
-      $run_mode = 'do_logged_in'; # can I cut this?
-    }
-    else {
-      $run_mode = 'public_roster';
-    }
+    $run_mode = 'public_do_login_form';
   }
   else {
     if (($self->authen->username)=~/\w/) {
@@ -117,9 +109,7 @@ sub setup {
   if (Url::par_is("login","entered_password") && ! (($self->authen->username)=~/\w/)) { $run_mode = 'public_log_in'}
   $self->start_mode($run_mode);
   $self->run_modes([qw/
-    public_anonymous_use
-    public_roster
-    public_log_in
+    public_do_login_form
     do_logged_in
     do_log_out
   /]);
@@ -135,7 +125,7 @@ sub data_dir {
 
 sub tree {
   my $data_dir = data_dir();
-  return FileTree->new(DATA_DIR=>"${data_dir}/",CLASS=>Url::par("class"));
+  return FileTree->new(DATA_DIR=>"${data_dir}/",CLASS=>Url::par("class")); # fixme - no class= in url
 }
 
 sub session_id {
@@ -148,14 +138,16 @@ sub session_id {
 # run modes
 #========================================================================================================
 
-sub public_roster {
+sub public_do_login_form {
   my $self = shift;
+
+  return "Hello, world."; # qwe
+
+
   my $login = Login->new('',0);
   $self->authen->logout();
-  # This run mode is the one we're sent to by the class's web page.
   $session = CGI::Session->new() or die $session->errstr;
   $session->expire(3600); 
-  $session->param('test','bluh');
   my $referer = CGI::referer(); # if they log out, send them back to the class's web page, which has the URL that gets
                                 # them into spotter in the first place; this is helpful when students share a browser
   if ($referer =~ /Spotter\.cgi/) {  # not external
@@ -167,14 +159,7 @@ sub public_roster {
     }
   }
   $session->param('referer',$referer);
-  return run_interface($login,'public_roster',0,$session);
-}
-
-sub public_log_in {
-  my $self = shift;
-  my $login = Login->new('',0);
-  $session = CGI::Session->load(session_id()) or die CGI::Session->errstr();
-  return run_interface($login,'public_log_in',1,$session);
+  return run_interface($login,'public_do_login_form',0,$session);
 }
 
 sub do_logged_in {
@@ -182,17 +167,6 @@ sub do_logged_in {
   my $login = Login->new($self->authen->username,1);
   $session = CGI::Session->load(session_id()) or die CGI::Session->errstr();
   return run_interface($login,'do_logged_in',1,$session);
-}
-
-sub public_anonymous_use {
-  my $self = shift;
-  $self->authen->logout();
-  my $login = Login->new('',0);
-  $session = CGI::Session->new();
-  $session->clear(); # they're anonymous, and we don't need to track them; but if the object was undef, we could
-                     # get errors that would occur only for anonymous users, which would be hard to test for.
-                     # We do a delete() at the end of run_interface.
-  return run_interface($login,'public_anonymous_use',0,$session);
 }
 
 # We don't keep them in spotter for anonymous use after they log out. This is because they may not realize they're
@@ -233,7 +207,7 @@ sub run_interface {
 
   my $tree = tree();
 
-  my ($basic_file_name,$xmlfile) = find_answer_file_and_set_up_log($data_dir);
+  my ($basic_file_name,$xmlfile) = ('','');
 
   if (0 || Url::par_set("debug")) {SpotterHTMLUtil::activate_debugging_output()}
   #debugging_stuff($early_debug,$tree,$xmlfile,$login,$session,$run_mode); # gets saved up for later
@@ -305,21 +279,6 @@ sub get_language {
   return ($out,$fatal_error,$language);
 }
 
-sub find_answer_file_and_set_up_log {
-  my $data_dir = shift;
-  my $basic_file_name = "spotter"; # default name of answer file
-  if (Url::par_set("file")) {
-    $basic_file_name = Url::par("file");
-    $basic_file_name =~ s/[^\w\d_\-]//g; # don't allow ., because it risks allowing .. on a unix system
-  }
-  our $xmlfile = "answers/".$basic_file_name.".xml";
-  if (-e $xmlfile) { # don't create foo.log if foo.xml doesn't exist
-    Log_file::set_name($basic_file_name,"log",$data_dir); # has side effect of creating log file, if necessary
-  }
-  if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"started")}
-  return ($basic_file_name,$xmlfile);
-}
-
 sub find_or_populate_data_dir {
   my $data_dir = shift;
   my $script_dir = shift;
@@ -344,45 +303,26 @@ sub show_functions {
       my $have_workfile = -e ($tree->student_work_file_name($login->username()));
       $out = $out 
               . "<b>".$tree->get_real_name($login->username(),"firstlast")."</b> logged in "
-              ." | <a href=\"".Url::link(REPLACE=>'what',REPLACE_WITH=>'check',DELETE=>'(login|journal|send_to)')."\">check</a>"
-              ." | <a href=\"".Url::link(REPLACE=>'what',REPLACE_WITH=>'account',DELETE=>'(login|journal|send_to)')."\">account</a>"
-              ." | <a href=\"".Url::link(REPLACE=>'what',REPLACE_WITH=>'grades', DELETE=>'(login|journal|send_to)')."\">grades</a>"
-              ." | <a href=\"".Url::link(REPLACE=>'what',REPLACE_WITH=>'email',  DELETE=>'(login|journal|send_to)')."\">e-mail</a>";
+              ." | <a href=\"".Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'what',REPLACE_WITH=>'check',DELETE=>'(login|journal|send_to)')."\">check</a>"
+              ." | <a href=\"".Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'what',REPLACE_WITH=>'account',DELETE=>'(login|journal|send_to)')."\">account</a>"
+              ." | <a href=\"".Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'what',REPLACE_WITH=>'grades', DELETE=>'(login|journal|send_to)')."\">grades</a>"
+              ." | <a href=\"".Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'what',REPLACE_WITH=>'email',  DELETE=>'(login|journal|send_to)')."\">e-mail</a>";
       if ($have_journals) {
           $out = $out . 
-               " | <a href=\"".Url::link(REPLACE=>'what',REPLACE_WITH=>'edit',DELETE=>'(login|journal|send_to)')."\">edit</a>";
+               " | <a href=\"".Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'what',REPLACE_WITH=>'edit',DELETE=>'(login|journal|send_to)')."\">edit</a>";
         }
       if ($have_workfile) {
           $out = $out . 
-               " | <a href=\"".Url::link(REPLACE=>'what',REPLACE_WITH=>'answers',DELETE=>'(login|journal|send_to)')."\">answers</a>";
+               " | <a href=\"".Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'what',REPLACE_WITH=>'answers',DELETE=>'(login|journal|send_to)')."\">answers</a>";
       }
       $out = $out . 
-               " | <a href=\"".Url::link(REPLACE=>'login',REPLACE_WITH=>'log_out',
+               " | <a href=\"".Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'login',REPLACE_WITH=>'log_out',
                                             NOT_DELETE=>'',DELETE_ALL=>1)."\">log out</a><br>\n";
     }
   }
 
   if (Url::par_is("login","entered_password") && ! $login->logged_in()) {
     $out = $out . "<p><b>Error: incorrect password.</b></p>";
-  }
-
-  my (%journals,@journals_list);
-  if ($have_journals) {
-    my ($a,$b) = ($journals->[0],$journals->[1]);
-    %journals = %$a;
-    @journals_list = @$b;
-  }
-  if ($have_journals && Url::par_is("what","edit")) {
-    my $first_one = 1;
-    $out = $out .  "<p><b>edit</b> ";
-    foreach my $j(@journals_list) {
-      if (!$first_one) {$out = $out .  " | "}
-      $first_one = 0;
-      $out = $out . 
-               "<a href=\"".Url::link(REPLACE=>'what',REPLACE_WITH=>'edit',DELETE=>'login',
-                                            REPLACE2=>'journal',REPLACE_WITH2=>$j)."\">".$journals{$j}."</a>";
-    }
-    $out = $out .  "<p>\n";
   }
 
   return $out;
@@ -400,7 +340,7 @@ sub do_function {
   my $run_mode = shift;
 
   if ($run_mode eq 'public_log_in' || $run_mode eq 'public_roster') {
-    $out = $out .  do_login_form($tree);
+    $out = $out .  public_do_login_form();
   }
 
   if ($run_mode eq 'do_log_out' && $session->param('referer')) {
@@ -430,147 +370,16 @@ sub do_function {
         $out = $out .  $output;
       }
     }
-    if (Url::par_is("what","emailpassword")) {
-      my $username = $SpotterHTMLUtil::cgi->param('username');
-      my $id_given = $SpotterHTMLUtil::cgi->param('id');
-      $id_given =~ s/^\@//; # get rid of initial @ sign in Fullerton College student ID
-      my $id = $tree->get_student_par($username,'id');
-      my $email = $tree->get_student_par($username,'email');
-      my $bogus = '';
-      if (! Email::syntactically_valid($email)) {$bogus = "You have not given a valid e-mail address, so you can't reset your password.";}
-      if ($id_given ne $id) {$bogus = "Incorrect student ID.";}
-      if ($bogus eq '') {
-        srand();
-        my $key = int(rand 1000).int(rand 1000).int(rand 1000);
-        $tree->set_student_par($username,'newpasswordkey',$key);
-        my $password = Login::hash(Login::salt().$id);
-        $tree->set_student_par($username,'password',$password);
-        Email::send_email(TO=>$email,SUBJECT=>'Spotter password',
-             BODY=>("To reset your password, please go the following web address:\n".
-                 Url::link(REPLACE=>'what',REPLACE_WITH=>'resetpassword',REPLACE2=>'username',REPLACE_WITH2=>$username,
-                            REPLACE3=>'key',REPLACE_WITH3=>$key,RELATIVE=>0)));
-        $out = $out .  "An e-mail has been sent to you with information on how to set a new password.<p>\n";
-      }
-      else { # We also end up here if the username is null or invalid.
-        $out = $out .  "$bogus<p>\n";
-      }
-    }
-    if (Url::par_is("what","resetpassword")) {
-      my $username = Url::par('username');
-      my $key = Url::par('key');
-      my $key2 = $tree->get_student_par($username,'newpasswordkey');
-      if ($key eq $key2 && $key2 ne '') {
-        $tree->set_student_par($username,'state','notactivated');
-        $tree->set_student_par($username,'newpasswordkey','');
-        $out = $out .  "Your account has been inactivated, and you can now reactivate it by typing in your student ID and choosing ";
-        $out = $out .  'a new password. <a href="'.Url::link(REPLACE=>'login',REPLACE_WITH=>'form',REPLACE2=>'what',REPLACE_WITH2=>'check',
-                                           DELETE=>'key').'">';
-        $out = $out .  "Click here</a> to reactivate your account.<p>\n";
-      }
-      else {
-        $out = $out .  "Error: invalid key.<p>\n";
-      }
-    }
 
     if (Url::par_is("what","account")) {
       $out = $out .  do_account($login,$tree);
     }
 
-    if (Url::par_is("what","email")) {
-      my $bogus = '';
-      my $own_email = '';
-      my $username = '';
-      if (!$login->logged_in()) {
-        $bogus = "You must be logged in to send e-mail through Spotter.";
-      }
-      else {
-        $username = $login->username();
-        $own_email = $tree->get_student_par($username,'email');
-        if ( ! Email::syntactically_valid($own_email)) {
-          $bogus = "You can't send e-mail through Spotter because you haven't supplied a valid "
-                  ."address yourself. To set your own address, click on the account link above.";
-        }
-      }
-      if ($bogus eq '') {
-        $out = $out .  do_email($username,$own_email,$tree);
-      }
-      else {
-        $out = $out .  "<p>$bogus</p>\n";
-      }
-    }
-
-    if (Url::par_is("what","grades")) {
-      if ($login->logged_in()) {
-        $out = $out .  do_grades($login,$tree);
-      }
-      else {
-        $out = $out .  "You must be logged in to check your grade.<p>\n";
-      }
-    }
-
-    if (Url::par_is("what","answers")) {
-      if ($login->logged_in()) {
-        $out = $out .  do_answers($login,$tree);
-      }
-      else {
-        $out = $out .  "You must be logged in to look at your answers.<p>\n";
-      }
-    }
-
-    if (Url::par_is("what","edit")) {
-      my $which_journal = Url::par("journal");
-      if ($which_journal ne '') {
-        if ($login->logged_in()) {
-          $out = $out .  do_edit_journal($which_journal,$login,$tree);
-        }
-        else {
-          $out = $out .  "You must be logged in to edit.<p>\n";
-        }
-      }
-    }
-
-    if (Url::par_is("what","viewold")) {
-      my $which_journal = Url::par("journal");
-      if ($which_journal ne '') {
-        if ($login->logged_in()) {
-          $out = $out .  do_view_old($which_journal,$login,$tree);
-        }
-      }
-    }
   } # end if (!$fatal_error && !Url::par_is("login","form"))
 
   return ($out,$fatal_error);
 }
 
-sub show_messages {
-  my $out = shift; # append onto this
-  my $tree = shift;
-  my $login = shift;
-
-  my $have_inbox = 0;
-  my $have_unread_messages = 0;
-
-  if ($login->logged_in()) {
-    $have_inbox = $tree->student_inbox_exists($login->username());
-    if ($have_inbox) {
-      $have_unread_messages = BulletinBoard::has_unread_messages($tree,$login->username());
-    }
-  }
-
-  if ($have_unread_messages) {
-    my @message_keys = BulletinBoard::unread_message_keys($tree,$login->username()); # sort by date
-    @message_keys = sort @message_keys;
-    foreach my $key(@message_keys) {
-      my $msg = BulletinBoard::get_message($tree,$login->username(),$key);
-      if ($msg->[0] eq '') {
-        $out = $out .  BulletinBoard::html_format_message($msg);
-        my $date = BulletinBoard::current_date_for_message_key();
-        BulletinBoard::mark_message_read($tree,$login->username(),$key,$date);
-      }
-    }
-  }
-  return $out;
-}
 
 #--------------------------------------------------------------------------------------------------
 
@@ -627,61 +436,20 @@ sub do_account {
   my $tree = shift;
   my $email = $tree->get_student_par($login->username(),'email');
   my $emailpublic = $tree->get_student_par($login->username(),'emailpublic');
-  my $url = Url::link(REPLACE2=>'what',REPLACE_WITH2=>'check');
+  my $url = Url::link(INTERFACE=>'InstructorInterface',REPLACE2=>'what',REPLACE_WITH2=>'check');
   return tint('checker.your_account_form','url'=>$url,'email'=>$email,'emailpublic'=>($emailpublic ? 'checked' : ''));
 }
 
 sub do_login_form {
-  my $tree = shift;
-  my $step = 1;
-  my $username = '';
-  my $disabled = 0;
+  my $username = Url::par("user");
   my $state = '';
   my $out = '';
-  if (Url::par_set("class") && !$tree->class_err()) {
-    $step = 2;
-    $username = Url::par('username');
-    $disabled = ($tree->get_student_par($username,'disabled'));
-    $state = ($tree->get_student_par($username,'state'));
-    SpotterHTMLUtil::debugging_output("student's account has state=".$state);
-    if ($username) {$step=3}
-  }
-  if ($disabled) {
-    $out = $out . "Your account has been disabled.<p>\n";
-  }
-  else {
-    if ($step==1) { # set class
-      $out = $out . "To log in, start from the link provided on your instructor's web page.<p>\n";
-      # has to have &class=bcrowell/f2002/205 or whatever in the link
-    }
-    if ($step==2) { # set username
-      my @roster = $tree->get_roster();
-      $out = $out . "<p><b>Click on your name below:</b><br>\n";
-      foreach my $who(sort {$tree->get_real_name($a,"lastfirst") cmp $tree->get_real_name($b,"lastfirst")} @roster) {
-        $out = $out . '<a href="'.Url::link(REPLACE=>'username',REPLACE_WITH=>$who).'">';
-        $out = $out . $tree->get_real_name($who,"lastfirst");
-        $out = $out . "</a><br>\n";
-      }
-    }
-    if ($step==3) { # enter password, and, if necessary, activate account
-      $out = $out . "<b>".$tree->get_real_name($username,"firstlast")."</b><br>\n";
-      my $date = current_date_string();
-      $out = $out . tint('user.password_form',
-        'url'=>Url::link(REPLACE=>'login',REPLACE_WITH=>'entered_password'),
-        'username'=>$username,
-        'prompt'=>($state eq 'normal' ? ' Password:' : ' Student ID:'), # initially, password is student ID
-        'activation'=>($state eq 'notactivated' ? tint('user.activate_account') : ''),
-        'real_name'=>$tree->get_real_name($username,"firstlast"),
-        'not_me_url'=>Url::link(DELETE=>'username')
-      );
-      if ($state eq 'normal') { # offer them a chance to recover their password; don't do if state isn't normal, because
-                                # then they haven't even set a password yet
-        $out = $out . tint('user.forgot_password',
-          'url'=>Url::link(DELETE=>'login',REPLACE=>'what',REPLACE_WITH=>'emailpassword',DELETE=>'login'),
-          'username'=>$username
-        )
-      }
-    }
+  $out = $out . "<b>Instructor: $username</b><br>\n";
+  if (0) {
+  $out = $out . tint('instructor_interface.password_form',
+    'url'=>Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'login',REPLACE_WITH=>'entered_password'),
+    'username'=>$username,
+  );
   }
   return $out;
 }
