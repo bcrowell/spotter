@@ -200,14 +200,12 @@ sub run_interface {
 
   my $tree = tree();
 
-  my ($basic_file_name,$xmlfile) = ('','');
-
   $out = show_functions($out,$login);
 
-  ($out,$fatal_error) = do_function($out,$fatal_error,$tree,$login,$session,$xmlfile,$data_dir,$run_mode);
+  ($out,$fatal_error) = do_function($out,$session,$fatal_error,$run_mode);
   if ($fatal_error) {  $out = $out .  "<p>Error: $fatal_error</p>\n"; }
 
-  $out = bottom_of_page($out,$tree); # date, debugging output, footer
+  $out = $out . tint('instructor_interface.footer_html');
 
   if ($run_mode eq 'do_log_out' || $run_mode eq 'public_anonymous_use') {$session->delete()}
 
@@ -219,15 +217,6 @@ sub run_interface {
   return $out; # all the html that has been accumulated above.
 
 } # end of run_interface
-
-
-sub bottom_of_page {
-  my ($out,$tree) = @_;
-  $out = $out .  SpotterHTMLUtil::accumulated_debugging_output();
-  $out = $out . tint('instructor_interface.footer_html');
-  return $out;
-}
-
 
 sub get_language {
   my ($out,$fatal_error) = @_;
@@ -251,13 +240,8 @@ sub show_functions {
 
 sub do_function {
   my $out = shift; # append onto this
-  my $fatal_error = shift;
-  my $tree = shift;
-  my $login = shift;
   my $session = shift;
-  my $xmlfile = shift;
-  my $cache_parsed_xml = shift;
-  my $data_dir = shift;
+  my $fatal_error = shift;
   my $run_mode = shift;
 
   if ($run_mode eq 'public_log_in' || $run_mode eq 'public_roster') {
