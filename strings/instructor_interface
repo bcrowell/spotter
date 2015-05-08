@@ -22,3 +22,17 @@ __html__
 footer_html=<<__html__
 </body></html>
 __html__
+
+header_html=<<__html__
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="http://www.w3.org/Math/XSL/mathml.xsl"?>
+<HTML xmlns="http://www.w3.org/1999/xhtml"><HEAD>
+<TITLE>$title</TITLE>
+</HEAD>
+__html__
+
+banner_html=<<__html__
+    <h1>Instructor's interface for Spotter</h1>
+    <p><a href="http://www.lightandmatter.com/spotter/spotter.html">About Spotter</a>.<p/>
+
+__html__

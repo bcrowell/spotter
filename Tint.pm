@@ -25,6 +25,18 @@ the class to have access to this e-mail address.<br>
                                                  ],
                                        'args' => []
                                      },
+          'instructor_interface.banner_html' => {
+                                                  'text' => [
+                                                              [
+                                                                'lit',
+                                                                '    <h1>Instructor\'s interface for Spotter</h1>
+    <p><a href="http://www.lightandmatter.com/spotter/spotter.html">About Spotter</a>.<p/>
+
+'
+                                                              ]
+                                                            ],
+                                                  'args' => []
+                                                },
           'user.blank_password' => {
                                      'text' => [
                                                  [
@@ -484,6 +496,30 @@ a habit of saving your text very often as you work on it.</p>
                                                     ],
                                           'args' => []
                                         },
+          'instructor_interface.header_html' => {
+                                                  'text' => [
+                                                              [
+                                                                'lit',
+                                                                '<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="http://www.w3.org/Math/XSL/mathml.xsl"?>
+<HTML xmlns="http://www.w3.org/1999/xhtml"><HEAD>
+<TITLE>'
+                                                              ],
+                                                              [
+                                                                'ref',
+                                                                'title'
+                                                              ],
+                                                              [
+                                                                'lit',
+                                                                '</TITLE>
+</HEAD>
+'
+                                                              ]
+                                                            ],
+                                                  'args' => [
+                                                              'title'
+                                                            ]
+                                                },
           'instructor_interface.password_form' => {
                                                     'text' => [
                                                                 [

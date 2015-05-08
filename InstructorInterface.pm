@@ -195,13 +195,17 @@ sub run_interface {
   my $language;
   ($out,$fatal_error,$language) = get_language($out,$fatal_error); # for use in Tint; not currently implemented
 
+  $out = $out .  tint('instructor_interface.header_html');
+  $out = $out .  tint('instructor_interface.banner_html');
+
   my $tree = tree();
 
   my ($basic_file_name,$xmlfile) = ('','');
 
   $out = show_functions($out,$login);
 
-  $out = show_errors($out,$fatal_error,$tree,$login,$session,$xmlfile,$data_dir,$run_mode);
+  ($out,$fatal_error) = do_function($out,$fatal_error,$tree,$login,$session,$xmlfile,$data_dir,$run_mode);
+  if ($fatal_error) {  $out = $out .  "<p>Error: $fatal_error</p>\n"; }
 
   $out = bottom_of_page($out,$tree); # date, debugging output, footer
 
@@ -216,23 +220,6 @@ sub run_interface {
 
 } # end of run_interface
 
-sub show_errors {
-  my ($out,$fatal_error,$tree,$login,$session,$xmlfile,$data_dir,$run_mode) = @_;
-  if ($login->logged_in() && $tree->class_err()) { $out = $out .  "<p><b>Error: ".$tree->class_err()."</b></p>\n";  }
-  ($out,$fatal_error) = do_function($out,$fatal_error,$tree,$login,$session,$xmlfile,$data_dir,$run_mode);
-  if ($fatal_error) {  $out = $out .  "<p>Error: $fatal_error</p>\n"; }
-  return $out; 
-}
-
-sub top_of_page {
-  my ($out,$fatal_error,$spotter_js_dir,$tree,$data_dir,$basic_file_name,$xmlfile,$need_cookies) = @_;
-  $out = $out .  SpotterHTMLUtil::HeaderHTML($spotter_js_dir)
-              .  SpotterHTMLUtil::BannerHTML($tree)
-              .  SpotterHTMLUtil::asciimath_js_code();
-  my $cache_parsed_xml;
-  ($out,$fatal_error,$cache_parsed_xml) = embedded_js($out,$fatal_error,$data_dir,$basic_file_name,$xmlfile,$need_cookies);
-  return ($out,$fatal_error,$cache_parsed_xml);
-}
 
 sub bottom_of_page {
   my ($out,$tree) = @_;
