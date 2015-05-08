@@ -188,7 +188,6 @@ sub run_interface {
   my $script_dir = Cwd::cwd();
 
   my $data_dir = data_dir();
-  find_or_populate_data_dir($data_dir,$script_dir);
 
   $SpotterHTMLUtil::cgi = new CGI;
   my $out = ''; # accumulate all the html code to be printed out
@@ -250,18 +249,6 @@ sub get_language {
   return ($out,$fatal_error,$language);
 }
 
-sub find_or_populate_data_dir {
-  my $data_dir = shift;
-  my $script_dir = shift;
-  if (!-e $data_dir) {die "The subdirectory '$data_dir' doesn't exist within the directory ${script_dir}. This should have been done by the makefile."}
-  foreach my $data_subdir("cache","throttle","log") {
-    my $d = "$data_dir/$data_subdir";
-    if (!(-d $d)) {
-      mkdir $d or die "Error creating directory $d, $!";
-    }
-  }
-}
-
 sub show_functions {
   my $out = shift; # append onto this
   my $login = shift;
@@ -294,98 +281,12 @@ sub do_function {
     $out = $out . "<p><a href=\"".$session->param('referer')."\">Click here to return to the class's web page.</a></p>"
   }
 
-  if (!$fatal_error && !Url::par_is("login","form")) {
-    if (Url::par_is("what","check")) {
-      # Seed the random number generator. We don't really want the numbers to
-      # be random. We want the same random numbers to be used every time a particular
-      # answer is checked. That way the comparison of input to stored answers is
-      # deterministic. Since the CGI only ever checks one problem, this is guaranteed
-      # to be deterministic as long as we always seed the random number generator
-      # the same way. I was tempted to re-seed the generator every time through
-      # answer_response(), but Perl doesn't allow srand to be called more than once,
-      # and it doesn't matter because we only check one problem per run.
-      srand(1);
-      if (!(-e $xmlfile)) {$fatal_error = "file '$xmlfile' does not exist"}
-      if (!(-r $xmlfile)) {$fatal_error = "unable to read file '$xmlfile'"} # This doesn't seem to work; see below.
-      if (!$fatal_error && !(-e Log_file::get_name())) {$fatal_error = "unable to open log file '".Log_file::get_name()."'"}
-      if (!$fatal_error && !(-w Log_file::get_name())) {$fatal_error = "unable to write to log file '".Log_file::get_name()."'"}
-      if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"starting to parse the xml file")}
-      if (Url::par_set("find")) {
-        my $output;
-        do_a_problem($xmlfile,\$fatal_error,\$output,$data_dir,$tree,$login);
-        if ($fatal_error ne '') {Log_file::write_entry(TEXT=>"fatal error from do_a_problem: $fatal_error")}
-        $out = $out .  $output;
-      }
-    }
-
-    if (Url::par_is("what","account")) {
-      $out = $out .  do_account($login,$tree);
-    }
-
-  } # end if (!$fatal_error && !Url::par_is("login","form"))
-
   return ($out,$fatal_error);
 }
 
 
 #--------------------------------------------------------------------------------------------------
 
-sub do_fiddle_with_account_settings {
-  my ($out,$fatal_error,$login,$tree) = @_;
-  if ($login->logged_in()) { 
-    my $result = fiddle_with_account_settings($tree,$login->username());
-    my $severity = $result->[0];
-    my $message = $result->[1];
-    if ($severity>=1) {
-      if ($severity>=2) {
-        $fatal_error = $message;
-      }
-      else {
-        $out = $out . "<p>$message</p>";
-      }
-    }
-  }
-  return ($out,$fatal_error);
-}
-
-# We come here if the user is logged in. If necessary, we handle stuff here like changing their password or email.
-# Returns [0,''] normally, or [severity,error message] otherwise.
-# A severity >=2 means not to treat them as logged in.
-sub fiddle_with_account_settings {
-  my $tree = shift;
-  my $username = shift;
-  if ($SpotterHTMLUtil::cgi->param('email') ne '') {
-    $tree->set_par_in_file($tree->student_info_file_name($username),'email',$SpotterHTMLUtil::cgi->param('email'));
-    $tree->set_par_in_file($tree->student_info_file_name($username),'emailpublic',
-                                                         ($SpotterHTMLUtil::cgi->param('emailpublic') eq 'public'));
-  }
-  if ($SpotterHTMLUtil::cgi->param('newpassword1') ne '') {
-    my ($p1,$p2) = ($SpotterHTMLUtil::cgi->param('newpassword1'),$SpotterHTMLUtil::cgi->param('newpassword2'));
-    if ($p1 ne $p2) {
-      return [2,tint('user.not_same_password_twice')];
-    }
-    if ($p1 eq '' && $tree->get_student_par($username,'state') eq 'notactivated') {
-      return [2,tint('user.blank_password')];
-    }
-    if ($p1 ne '') {
-      my $password = $p1;
-      $tree->set_par_in_file($tree->student_info_file_name($username),'state','normal');
-      $tree->set_par_in_file($tree->student_info_file_name($username),'password',
-                          Login::hash(Login::salt().$password));
-    }
-  } # end if setting new password
-  return [0,''];
-}
-
-
-sub do_account {
-  my $login = shift;
-  my $tree = shift;
-  my $email = $tree->get_student_par($login->username(),'email');
-  my $emailpublic = $tree->get_student_par($login->username(),'emailpublic');
-  my $url = Url::link(INTERFACE=>'InstructorInterface',REPLACE2=>'what',REPLACE_WITH2=>'check');
-  return tint('checker.your_account_form','url'=>$url,'email'=>$email,'emailpublic'=>($emailpublic ? 'checked' : ''));
-}
 
 sub do_login_form {
   my $username = Url::par("user");
