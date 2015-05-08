@@ -97,13 +97,8 @@ sub setup {
   $early_debug = $early_debug . "login=".Url::par("login")."=\n";
   $early_debug = $early_debug . "self->authen->username=".($self->authen->username)."=\n";
   my $run_mode = 'public_do_login_form';
-  if (Url::par_is("login","form")) {
-    $run_mode = 'public_do_login_form';
-  }
-  else {
-    if (($self->authen->username)=~/\w/) {
-      $run_mode = 'do_logged_in';
-    }
+  if (($self->authen->username)=~/\w/) { # passes this test when it shouldn't
+    # $run_mode = 'do_logged_in';
   }
   if (Url::par_is("login","log_out"))    { $run_mode = 'do_log_out' }
   if (Url::par_is("login","entered_password") && ! (($self->authen->username)=~/\w/)) { $run_mode = 'public_log_in'}
@@ -140,9 +135,6 @@ sub session_id {
 
 sub public_do_login_form {
   my $self = shift;
-
-  return "Hello, world."; # qwe
-
 
   my $login = Login->new('',0);
   $self->authen->logout();
@@ -222,6 +214,9 @@ sub run_interface {
   if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"done writing html output")}
 
   if ($run_mode eq 'do_log_out' || $run_mode eq 'public_anonymous_use') {$session->delete()}
+
+  $out = $out . "run mode = $run_mode<p>";
+  if ($run_mode eq 'public_do_login_form') {$out = $out . do_login_form()}
 
   $session->flush();
 
@@ -445,11 +440,9 @@ sub do_login_form {
   my $state = '';
   my $out = '';
   $out = $out . "<b>Instructor: $username</b><br>\n";
-  if (0) {
   $out = $out . tint('instructor_interface.password_form',
     'url'=>Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'login',REPLACE_WITH=>'entered_password'),
     'username'=>$username,
   );
-  }
   return $out;
 }
