@@ -1,5 +1,5 @@
 VERSION = 3.0.3
-# ... when changing this, also change WebInterface.pm
+# ... when changing this, also change WebInterface.pm and InstructorInterface.pm
 
 CGI_GENERAL = /usr/lib/cgi-bin
 WEB_SERVER_GROUP = www-data
