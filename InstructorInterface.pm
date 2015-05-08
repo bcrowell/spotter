@@ -101,7 +101,7 @@ sub setup {
   $early_debug = $early_debug . "login=".Url::par("login")."=\n";
   $early_debug = $early_debug . "self->authen->username=".($self->authen->username)."=\n";
   my $run_mode = 'public_do_login_form';
-  if (($self->authen->username)=~/\w/) { # passes this test when it shouldn't
+  if (($self->authen->username)=~/\w/) {
     $run_mode = 'do_logged_in';
   }
   if (Url::par_is("login","log_out"))    { $run_mode = 'do_log_out' }
@@ -218,12 +218,8 @@ sub run_interface {
 
   my ($basic_file_name,$xmlfile) = ('','');
 
-  if (0 || Url::par_set("debug")) {SpotterHTMLUtil::activate_debugging_output()}
-  #debugging_stuff($early_debug,$tree,$xmlfile,$login,$session,$run_mode); # gets saved up for later
+  $out = show_functions($out,$login);
 
-  #($out,$fatal_error) = do_fiddle_with_account_settings($out,$fatal_error,$login,$tree);
-  if ($tree->class_description()) {$out = $out .  $tree->class_description()."<br>\n"}
-  #$out = show_functions($out,$tree,$login);
   $out = show_errors($out,$fatal_error,$tree,$login,$session,$xmlfile,$data_dir,$run_mode);
 
   $out = bottom_of_page($out,$tree); # date, debugging output, footer
@@ -305,36 +301,12 @@ sub find_or_populate_data_dir {
 
 sub show_functions {
   my $out = shift; # append onto this
-  my $tree = shift;
   my $login = shift;
 
-  my $journals = $tree->journals();
-  my $have_journals = defined $journals;
-  if (!Url::par_is("login","form")) {
-    if ($login->logged_in()) {
-      my $have_workfile = -e ($tree->student_work_file_name($login->username()));
-      $out = $out 
-              . "<b>".$tree->get_real_name($login->username(),"firstlast")."</b> logged in "
-              ." | <a href=\"".Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'what',REPLACE_WITH=>'check',DELETE=>'(login|journal|send_to)')."\">check</a>"
-              ." | <a href=\"".Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'what',REPLACE_WITH=>'account',DELETE=>'(login|journal|send_to)')."\">account</a>"
-              ." | <a href=\"".Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'what',REPLACE_WITH=>'grades', DELETE=>'(login|journal|send_to)')."\">grades</a>"
-              ." | <a href=\"".Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'what',REPLACE_WITH=>'email',  DELETE=>'(login|journal|send_to)')."\">e-mail</a>";
-      if ($have_journals) {
-          $out = $out . 
-               " | <a href=\"".Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'what',REPLACE_WITH=>'edit',DELETE=>'(login|journal|send_to)')."\">edit</a>";
-        }
-      if ($have_workfile) {
-          $out = $out . 
-               " | <a href=\"".Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'what',REPLACE_WITH=>'answers',DELETE=>'(login|journal|send_to)')."\">answers</a>";
-      }
-      $out = $out . 
+  if ($login->logged_in()) {
+    $out = $out . 
                " | <a href=\"".Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'login',REPLACE_WITH=>'log_out',
                                             NOT_DELETE=>'',DELETE_ALL=>1)."\">log out</a><br>\n";
-    }
-  }
-
-  if (Url::par_is("login","entered_password") && ! $login->logged_in()) {
-    $out = $out . "<p><b>Error: incorrect password.</b></p>";
   }
 
   return $out;
