@@ -76,7 +76,13 @@ our $session;
 InstructorInterface->authen->config(
   DRIVER => [ 'Generic', sub {
     my ($username, $password) = @_;
-    if ($password eq "foo" && $username eq "bcrowell") {return $username} else {return undef}
+    my $info_file = user_dir($username) . "/$username.instructor_info";
+    my $hash1 = '';
+    if (-e $info_file) { # if no such user, file doesn't exist
+      $hash1 = FileTree::get_par_from_file(undef,$info_file,'password_hash');
+    }
+    my $hash2 = Digest::SHA::sha1_base64("spotter_instructor_password",$password);
+    if ($hash1 eq $hash2) {return $username} else {return undef}
     # my $tree = tree();
     # my $hashed = $tree->get_par_from_file($tree->student_info_file_name($username),'password');
     # if (Login::hash(Login::salt().$password) eq $hashed) { return $username } else {return undef}
@@ -118,6 +124,11 @@ sub setup {
 
 sub data_dir {
   return 'data'; # relative to cwd, which is typically .../cgi-bin/spotter3
+}
+
+sub user_dir {
+  my $username = shift;
+  return data_dir() . '/' . $username;
 }
 
 sub tree {
