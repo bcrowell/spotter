@@ -295,6 +295,16 @@ h5.journal
                                                        ],
                                              'args' => []
                                            },
+          'instructor_interface.footer_html' => {
+                                                  'text' => [
+                                                              [
+                                                                'lit',
+                                                                '</body></html>
+'
+                                                              ]
+                                                            ],
+                                                  'args' => []
+                                                },
           'responses.units_lecture' => {
                                          'text' => [
                                                      [

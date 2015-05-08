@@ -245,22 +245,6 @@ sub show_errors {
   return $out; 
 }
 
-sub debugging_stuff {
-  my ($early_debug,$tree,$xmlfile,$login,$session,$run_mode) = @_;
-  $early_debug =~ s/\n/<p>/g;
-  SpotterHTMLUtil::debugging_output("early_debug=".$early_debug);
-  SpotterHTMLUtil::debugging_output("The referrer is ".$session->param('referer'));
-  SpotterHTMLUtil::debugging_output("The log file is ".Log_file::get_name());
-  SpotterHTMLUtil::debugging_output("The xml file is ".$xmlfile);
-  SpotterHTMLUtil::debugging_output("Logged in: ".$login->logged_in());
-  SpotterHTMLUtil::debugging_output("Username: ".$login->username());
-  SpotterHTMLUtil::debugging_output("run_mode: ".$run_mode);
-  SpotterHTMLUtil::debugging_output("url::par(login): ".Url::par("login"));
-  SpotterHTMLUtil::debugging_output("class_err=".$tree->class_err());
-  SpotterHTMLUtil::debugging_output("class_description=".$tree->class_description());
-  SpotterHTMLUtil::debugging_output("priority=".getpriority(0,0));
-}
-
 sub top_of_page {
   my ($out,$fatal_error,$spotter_js_dir,$tree,$data_dir,$basic_file_name,$xmlfile,$need_cookies) = @_;
   $out = $out .  SpotterHTMLUtil::HeaderHTML($spotter_js_dir)
@@ -273,9 +257,8 @@ sub top_of_page {
 
 sub bottom_of_page {
   my ($out,$tree) = @_;
-  $out = $out .  "<p>time: ".current_date_string()." CST</p>\n";
   $out = $out .  SpotterHTMLUtil::accumulated_debugging_output();
-  $out = $out .  SpotterHTMLUtil::FooterHTML($tree);
+  $out = $out . tint('instructor_interface.footer_html');
   return $out;
 }
 

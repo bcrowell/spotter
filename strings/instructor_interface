@@ -18,3 +18,7 @@ password_form = <<__html__
 </form>
 <p>
 __html__
+
+footer_html=<<__html__
+</body></html>
+__html__
