@@ -105,6 +105,7 @@ sub setup {
   $self->start_mode($run_mode);
   $self->run_modes([qw/
     public_do_login_form
+    public_log_in
     do_logged_in
     do_log_out
   /]);
@@ -152,6 +153,13 @@ sub public_do_login_form {
   }
   $session->param('referer',$referer);
   return run_interface($login,'public_do_login_form',0,$session);
+}
+
+sub public_log_in {
+  my $self = shift;
+  my $login = Login->new('',0);
+  $session = CGI::Session->load(session_id()) or die CGI::Session->errstr();
+  return run_interface($login,'public_log_in',1,$session);
 }
 
 sub do_logged_in {
