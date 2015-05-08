@@ -25,33 +25,18 @@ my $spotter_js_dir = "/spotter_js/$version_of_spotter";
 use Spotter;
 use Login;
 use FileTree;
-use Expression;
-use Parse;
-use Eval;
-use Rational;
-use Units;
-use Measurement;
-use Journal;
 use WorkFile;
 use BulletinBoard;
 use Email;
 use AnswerResponse;
 use SpotterHTMLUtil;
 require "Util.pm";
-require "Throttle.pm";
 use Debugging;
-use Checker; # contains Options, Ans, Vbl, and Problem classes
-require "CheckAnswer.pm";
 use Url;
 use Log_file;
 use Tint 'tint';
 
-use Math::Complex;
-use Math::Trig;
 use Message;
-use Getopt::Std;
-use XML::Parser;
-use XML::Simple;
 use CGI;
 use Digest::SHA;
 use POSIX (); # the () keeps it from importing a huge namespace
@@ -97,9 +82,6 @@ InstructorInterface->authen->protected_runmodes(qr/^(?!public_)/); # runmodes no
 
 sub setup {
   my $self = shift;
-  $early_debug = $early_debug . "login=form=".Url::par_is("login","form")."=\n";
-  $early_debug = $early_debug . "login=".Url::par("login")."=\n";
-  $early_debug = $early_debug . "self->authen->username=".($self->authen->username)."=\n";
   my $run_mode = 'public_do_login_form';
   if (($self->authen->username)=~/\w/) {
     $run_mode = 'do_logged_in';
@@ -223,8 +205,6 @@ sub run_interface {
   $out = show_errors($out,$fatal_error,$tree,$login,$session,$xmlfile,$data_dir,$run_mode);
 
   $out = bottom_of_page($out,$tree); # date, debugging output, footer
-
-  if ($Debugging::profiling) {Log_file::write_entry(TEXT=>"done writing html output")}
 
   if ($run_mode eq 'do_log_out' || $run_mode eq 'public_anonymous_use') {$session->delete()}
 
