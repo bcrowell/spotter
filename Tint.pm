@@ -1066,7 +1066,41 @@ function format_variable_name(x) {
                                         'subject',
                                         'body'
                                       ]
-                          }
+                          },
+          'instructor_interface.select_student_form' => {
+                                                          'text' => [
+                                                                      [
+                                                                        'lit',
+                                                                        '<form method="POST" action="'
+                                                                      ],
+                                                                      [
+                                                                        'ref',
+                                                                        'action_url'
+                                                                      ],
+                                                                      [
+                                                                        'lit',
+                                                                        '">
+<select name="select_student">
+'
+                                                                      ],
+                                                                      [
+                                                                        'ref',
+                                                                        'html_for_options'
+                                                                      ],
+                                                                      [
+                                                                        'lit',
+                                                                        '
+</select> 
+<input type="submit" name="submitStudentButton" value="Select">
+</form>
+'
+                                                                      ]
+                                                                    ],
+                                                          'args' => [
+                                                                      'action_url',
+                                                                      'html_for_options'
+                                                                    ]
+                                                        }
         };
  # evaluates to my $VAR1 = "...";, which is only evaluated when the module is first imported
           sub tint {

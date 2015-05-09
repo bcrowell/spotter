@@ -202,8 +202,6 @@ sub run_interface {
   if (Url::par_set('select_class')) {$class = Url::par('select_class')}
   if ($class) {$session->param('class',$class)}
 
-  $out = $out . "<p>class=$class</p>";
-
   my $username = '';
   my $user_dir = '';
   if ($login->logged_in()) {
@@ -249,12 +247,15 @@ sub show_functions {
   if ($login->logged_in()) {
     my @functions = ();
     # description,class must be selected,url parameters
+    my $del = '(user|select_term|select_class|login)';
     push @functions,['log out',0,{REPLACE=>'login',REPLACE_WITH=>'log_out',NOT_DELETE=>'',DELETE_ALL=>1}];
-    push @functions,['email list',1,{REPLACE=>'function',REPLACE_WITH=>'email_list',DELETE=>'(user|select_term|select_class|login)'}];
+    push @functions,['email list',             1,{REPLACE=>'function',REPLACE_WITH=>'email_list',DELETE=>$del}];
+    push @functions,['manage student accounts',1,{REPLACE=>'function',REPLACE_WITH=>'manage_accounts',DELETE=>$del}];
     $out = $out . "<p>".join(' | ',map {
       my $x = $_;
       my ($label,$class_required,$pars) = ($x->[0],$x->[1],$x->[2]);
       my @pars_array = %$pars;
+      @pars_array = (@pars_array,REPLACE2=>'step',REPLACE_WITH2=>'1');
       my $result = $label; # deactivated by default
       unless ($class_required && !$class) {
         my $link = make_link(@pars_array);
@@ -283,13 +284,97 @@ sub do_function {
     $out = $out .  public_do_login_form($out,$function,$user_dir,$class,$term,$session,$fatal_error);
   }
 
-  if ($function eq 'email_list') {($out,$fatal_error) = do_email_list($out,$function,$user_dir,$class,$term,$session,$fatal_error)}
+  my @stuff = ($out,$function,$user_dir,$class,$term,$session,$fatal_error);
+  if ($function eq 'email_list') {($out,$fatal_error) = do_email_list(@stuff)}
+  if ($function eq 'manage_accounts') {($out,$fatal_error) = do_manage_accounts(@stuff)}
 
   if ($run_mode eq 'do_log_out' && $session->param('referer')) {
     $out = $out . "<p><a href=\"".$session->param('referer')."\">Click here to return to the page that took you here.</a></p>"
   }
 
   return ($out,$fatal_error);
+}
+
+sub do_manage_accounts {
+  my ($out,$function,$user_dir,$class,$term,$session,$fatal_error) = @_;
+  my $step = Url::par('step')+0;
+  my $class_dir = class_dir($user_dir,$term,$class);
+  $out = $out . function_header("Manage student accounts: step $step");
+  my ($k,$r,$fatal_error) = get_roster($user_dir,$class_dir,$fatal_error,1);
+  my @keys = @$k; # sorted list of keys
+  if ($step==1) {
+    my @o = ();
+    foreach my $key(@keys) {
+      my $last = $r->{$key}->{last};
+      my $first = $r->{$key}->{first};
+      my $flag = '';
+      if ($r->{$key}->{disabled}) {$flag = " (account disabled)"}
+      push @o,"<option value=\"$key\">$last, $first$flag</option>";
+    }
+    $out = $out . tint('instructor_interface.select_student_form',
+      'action_url'=>make_link(REPLACE=>'step',REPLACE_WITH=>'2',DELETE=>'(user|select_term|select_class)'),
+      'html_for_options'=>join("\n",@o)
+    );
+  }
+  if ($step==2) {
+    my $key = $SpotterHTMLUtil::cgi->param('select_student');
+    my $d = $r->{$key};
+    my $last = $d->{last};
+    my $first = $d->{first};
+    my $disabled = $d->{disabled};
+    $session->param('student_key',$key);
+    $out = $out . "<h2>$last, $first</h2>\n";
+    $out = $out . "<p>The student's account is ".($disabled ? "disabled" : "not disabled").".</p>\n";
+    $out = $out . "<p>Actions:</p>";
+    my @actions = (
+      # ['drop',1,'Drop'], # don't allow, requires shelling out
+      ['disable',!$disabled,'Disable account'],
+      ['enable',$disabled,'Reenable account'],
+    );
+    foreach my $action(@actions) {
+      my ($verb,$allowed,$description) = ($action->[0],$action->[1],$action->[2]);
+      if ($allowed) {
+        my $url = make_link(REPLACE=>'step',REPLACE_WITH=>'3',REPLACE2=>'verb',REPLACE_WITH2=>$verb,DELETE=>'(user|select_term|select_class)');
+        $out = $out . "<p><a href=\"$url\">$description</a></p>\n";
+      }
+      else {
+        $out = $out . "<p>$description</p>\n";
+      }
+    }
+    my $url_to_go_back = make_link(REPLACE=>'step',REPLACE_WITH=>'1',DELETE=>'(user|select_term|select_class|verb)');
+    $out = $out . "<p><a href=\"$url_to_go_back\">Back to student selection</a></p>\n";
+  }
+  if ($step==3) {
+    my $key = $session->param('student_key');
+    my $d = $r->{$key};
+    my $last = $d->{last};
+    my $first = $d->{first};
+    $out = $out . "<h2>$last, $first</h2>\n";
+    my $verb = $SpotterHTMLUtil::cgi->param('verb');
+    $fatal_error = drop_disable_or_enable_account($key,$verb,$user_dir,$class_dir,$fatal_error);
+    #$out = $out . "would have done $verb";
+    unless ($fatal_error) {$out = $out . "Action successfully completed: $verb"}
+  }
+  return ($out,$fatal_error);
+}
+
+sub drop_disable_or_enable_account {
+  my ($key,$verb,$user_dir,$class_dir,$fatal_error) = @_;
+  if ($verb eq 'enable' || $verb eq 'disable') {
+    my $info_file = "$class_dir/$key.info";
+    open(FILE,"<$info_file") or die "Error opening file $info_file for input";
+    my $stuff = '';
+    while (my $line= <FILE>) {
+      $stuff = $stuff .  $line;
+    }
+    close(FILE);
+    $stuff =~ s/disabled=\"0\"/disabled=\"1\"/ if $verb eq 'disable';
+    $stuff =~ s/disabled=\"1\"/disabled=\"0\"/ if $verb eq 'enable';
+    open(FILE,">$info_file") or die "Error opening file $info_file for output";
+    print FILE $stuff;
+    close(FILE);
+  }
+  return $fatal_error;
 }
 
 sub do_email_list {
@@ -310,6 +395,38 @@ sub do_email_list {
     $out = $out . (join ',',@list);
   }
   return ($out,$fatal_error);
+}
+
+sub get_roster { # returns an array ref of keys and a hash ref of hash refs, {'smith_john'=>{'email'=>'...',...},...}
+  my ($user_dir,$class_dir,$fatal_error,$include_disabled) = @_;
+  my %roster = ();
+  unless (-d $class_dir) {$fatal_error = "No such directory: $class_dir"}
+  if (!$fatal_error) {
+    my @info_files = glob("$class_dir/*.info");
+    foreach my $info(@info_files) {
+      my ($d,$fatal_error) = get_student_info($info,$fatal_error);
+      my %d = %$d;
+      my $include = 1;
+      if (!$include_disabled && $d{disabled} eq '1') {$include=0}
+      my $key = student_info_filename_to_key($info);
+      $roster{$key} = $d if $include;
+    }
+  }
+  my @sorted_keys = sort {sort_student_keys($a,$roster{$a}->{disabled},$b,$roster{$b}->{disabled})} keys %roster;
+  return (\@sorted_keys,\%roster,$fatal_error);
+}
+
+sub sort_student_keys {
+  my ($a,$a_disabled,$b,$b_disabled) = @_;
+  if ($a_disabled && !$b_disabled) {return 1}
+  if ($b_disabled && !$a_disabled) {return -1}
+  return $a cmp $b;
+}
+
+sub student_info_filename_to_key {
+  my $info = shift;
+  $info =~ /([\w\-]+)\.info$/;
+  return $1;
 }
 
 sub get_student_info {

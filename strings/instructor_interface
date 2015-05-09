@@ -36,3 +36,12 @@ banner_html=<<__html__
     <p><a href="http://www.lightandmatter.com/spotter/spotter.html">About Spotter</a>.<p/>
 
 __html__
+
+select_student_form=<<__form__
+<form method="POST" action="$action_url">
+<select name="select_student">
+$html_for_options
+</select> 
+<input type="submit" name="submitStudentButton" value="Select">
+</form>
+__form__
