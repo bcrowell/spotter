@@ -251,6 +251,7 @@ sub show_functions {
     push @functions,['log out',0,{REPLACE=>'login',REPLACE_WITH=>'log_out',NOT_DELETE=>'',DELETE_ALL=>1}];
     push @functions,['email list',             1,{REPLACE=>'function',REPLACE_WITH=>'email_list',DELETE=>$del}];
     push @functions,['manage student accounts',1,{REPLACE=>'function',REPLACE_WITH=>'manage_accounts',DELETE=>$del}];
+    push @functions,['add a student',1,{REPLACE=>'function',REPLACE_WITH=>'add',DELETE=>$del}];
     $out = $out . "<p>".join(' | ',map {
       my $x = $_;
       my ($label,$class_required,$pars) = ($x->[0],$x->[1],$x->[2]);
@@ -259,7 +260,6 @@ sub show_functions {
       my $result = $label; # deactivated by default
       unless ($class_required && !$class) {
         my $link = make_link(@pars_array);
-        #my $debug = "class_required=$class_required, class=$class";
         $result = "<a href=\"$link\">$label</a>";
       }
       $result
@@ -287,6 +287,7 @@ sub do_function {
   my @stuff = ($out,$function,$user_dir,$class,$term,$session,$fatal_error);
   if ($function eq 'email_list') {($out,$fatal_error) = do_email_list(@stuff)}
   if ($function eq 'manage_accounts') {($out,$fatal_error) = do_manage_accounts(@stuff)}
+  if ($function eq 'add') {($out,$fatal_error) = do_add(@stuff)}
 
   if ($run_mode eq 'do_log_out' && $session->param('referer')) {
     $out = $out . "<p><a href=\"".$session->param('referer')."\">Click here to return to the page that took you here.</a></p>"
@@ -294,6 +295,75 @@ sub do_function {
 
   return ($out,$fatal_error);
 }
+
+sub do_add {
+  my ($out,$function,$user_dir,$class,$term,$session,$fatal_error) = @_;
+  my $step = Url::par('step')+0;
+  my $class_dir = class_dir($user_dir,$term,$class);
+  $out = $out . function_header("Add a student: step $step");
+  if ($step==1) {
+    $out = $out . tint('instructor_interface.add_student_form',
+      'action_url'=>make_link(REPLACE=>'step',REPLACE_WITH=>'2',DELETE=>'(user|select_term|select_class)')
+    );
+  }
+  if ($step==2) {
+    my $first = $SpotterHTMLUtil::cgi->param('firstName');
+    my $last = $SpotterHTMLUtil::cgi->param('lastName');
+    my $id = $SpotterHTMLUtil::cgi->param('studentID');
+    $fatal_error = add_one_student($last,$first,$id,$class_dir,$fatal_error);
+    #$out = $out . "first=$first last=$last id=$id";
+    unless ($fatal_error) {$out = $out . "Successfully added $last, $first, student ID $id"}
+  }
+  return ($out,$fatal_error);
+}
+
+sub add_one_student {
+  my ($last,$first,$id,$dir,$fatal_error) = @_;
+
+  my $last = ucfirst($last);
+  my $first = ucfirst($first);
+  my $key = $last."_".$first;
+  $key = lc($key);
+  $key =~ s/[^a-z\-_]//g;
+
+  my $p = Digest::SHA::sha1_base64("spotter".$id);
+
+  my $file = "$dir/$key.info";
+
+  if (-e $file) { return "Error: file $file already exists"}
+
+  open(FILE,">$file") or return { "unable to open file $file for output\n$!"}
+  print FILE "last=\"$last\",first=\"$first\",id=\"$id\",disabled=\"0\"\n";
+  print FILE "state=\"notactivated\",password=\"$p\"\n";
+  close(FILE);
+  if (!-e $file) {return "Error creating $file"}
+  $fatal_error = set_group($file,$server_group,$fatal_error); # dies if there's an error
+  system("chmod ug+w $file");
+
+  return $fatal_error;
+
+}
+
+sub set_group {
+  my ($file,$group,$fatal_error) = @_;
+  if (($file=~m/\.\./) || !($file=~m/^[\w\/\.\-]+$/)) {
+    return "Illegal characters in filename, setting group of file $file"; # security
+  }
+  my $groups_i_am_in = `groups`;
+  my $q = quotemeta $group;
+  unless ($groups_i_am_in =~ /$group/) {
+    return "Attempted to set group of $file to $group. You need to be a member of group $group in order to do this. The command groups tells you what groups you're a member of. To add yourself to a group, edit /etc/group, log out, and log back in.";
+  }
+  my $cmd = "chgrp $group $file";
+  system("$cmd");
+  my $err = $!;
+  if (get_group($file) ne $group) {
+    return "Error setting group of $file to $group, $err, command $cmd";
+  }
+
+  return $fatal_error;
+}
+
 
 sub do_manage_accounts {
   my ($out,$function,$user_dir,$class,$term,$session,$fatal_error) = @_;

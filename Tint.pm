@@ -37,6 +37,32 @@ the class to have access to this e-mail address.<br>
                                                             ],
                                                   'args' => []
                                                 },
+          'instructor_interface.add_student_form' => {
+                                                       'text' => [
+                                                                   [
+                                                                     'lit',
+                                                                     '<form method="POST" action="'
+                                                                   ],
+                                                                   [
+                                                                     'ref',
+                                                                     'action_url'
+                                                                   ],
+                                                                   [
+                                                                     'lit',
+                                                                     '">
+      First name: <input type="text" name="firstName"><br/>
+      Last name: <input type="text" name="lastName"><br/>
+      Student ID: <input type="text" name="studentID"><br/>
+<br>
+<input type="submit" name="submitAddStudentButton" value="Add">
+</form>
+'
+                                                                   ]
+                                                                 ],
+                                                       'args' => [
+                                                                   'action_url'
+                                                                 ]
+                                                     },
           'user.blank_password' => {
                                      'text' => [
                                                  [

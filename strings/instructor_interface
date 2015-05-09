@@ -45,3 +45,13 @@ $html_for_options
 <input type="submit" name="submitStudentButton" value="Select">
 </form>
 __form__
+
+add_student_form=<<__form__
+<form method="POST" action="$action_url">
+      First name: <input type="text" name="firstName"><br/>
+      Last name: <input type="text" name="lastName"><br/>
+      Student ID: <input type="text" name="studentID"><br/>
+<br>
+<input type="submit" name="submitAddStudentButton" value="Add">
+</form>
+__form__
