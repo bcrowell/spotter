@@ -197,8 +197,12 @@ sub run_interface {
 
   my $term = $session->param('term');
   if (Url::par_set('select_term')) {$term = Url::par('select_term')}
+  if ($term) {$session->param('term',$term)}
   my $class = $session->param('class');
   if (Url::par_set('select_class')) {$class = Url::par('select_class')}
+  if ($class) {$session->param('class',$class)}
+
+  $out = $out . "<p>class=$class</p>";
 
   my $username = '';
   my $user_dir = '';
@@ -210,9 +214,12 @@ sub run_interface {
 
   $out = class_selection($out,$user_dir,$term,$class) if $login->logged_in();
 
-  $out = show_functions($out,$login);
+  $out = show_functions($out,$login,$class);
 
-  ($out,$fatal_error) = do_function($out,$session,$fatal_error,$run_mode);
+  my $function = '';
+  if (Url::par_set('function')) {$function = Url::par('function')}
+
+  ($out,$fatal_error) = do_function($out,$function,$user_dir,$class,$term,$session,$fatal_error,$run_mode);
   if ($fatal_error) {  $out = $out .  "<p>Error: $fatal_error</p>\n"; }
 
   $out = $out . tint('instructor_interface.footer_html');
@@ -237,11 +244,25 @@ sub get_language {
 sub show_functions {
   my $out = shift; # append onto this
   my $login = shift;
+  my $class = shift;
 
   if ($login->logged_in()) {
-    $out = $out . 
-               " | <a href=\"".make_link(REPLACE=>'login',REPLACE_WITH=>'log_out',
-                                            NOT_DELETE=>'',DELETE_ALL=>1)."\">log out</a><br>\n";
+    my @functions = ();
+    # description,class must be selected,url parameters
+    push @functions,['log out',0,{REPLACE=>'login',REPLACE_WITH=>'log_out',NOT_DELETE=>'',DELETE_ALL=>1}];
+    push @functions,['email list',1,{REPLACE=>'function',REPLACE_WITH=>'email_list',DELETE=>'(user|select_term|select_class|login)'}];
+    $out = $out . "<p>".join(' | ',map {
+      my $x = $_;
+      my ($label,$class_required,$pars) = ($x->[0],$x->[1],$x->[2]);
+      my @pars_array = %$pars;
+      my $result = $label; # deactivated by default
+      unless ($class_required && !$class) {
+        my $link = make_link(@pars_array);
+        #my $debug = "class_required=$class_required, class=$class";
+        $result = "<a href=\"$link\">$label</a>";
+      }
+      $result
+    } @functions)."</p>\n";
   }
 
   return $out;
@@ -250,26 +271,52 @@ sub show_functions {
 sub make_link {
   return Url::link (
     INTERFACE => "InstructorInterface",
-    DELETE=>'(user|select_term|select_class)',
+    DELETE=>'(user|select_term|select_class|function)',
     @_,
   );
 }
 
 sub do_function {
-  my $out = shift; # append onto this
-  my $session = shift;
-  my $fatal_error = shift;
-  my $run_mode = shift;
+  my ($out,$function,$user_dir,$class,$term,$session,$fatal_error,$run_mode) = @_;
 
   if ($run_mode eq 'public_log_in' || $run_mode eq 'public_roster') {
-    $out = $out .  public_do_login_form();
+    $out = $out .  public_do_login_form($out,$function,$user_dir,$class,$term,$session,$fatal_error);
   }
 
+  if ($function eq 'email_list') {($out,$fatal_error) = do_email_list($out,$function,$user_dir,$class,$term,$session,$fatal_error)}
+
   if ($run_mode eq 'do_log_out' && $session->param('referer')) {
-    $out = $out . "<p><a href=\"".$session->param('referer')."\">Click here to return to the class's web page.</a></p>"
+    $out = $out . "<p><a href=\"".$session->param('referer')."\">Click here to return to the page that took you here.</a></p>"
   }
 
   return ($out,$fatal_error);
+}
+
+sub do_email_list {
+  my ($out,$function,$user_dir,$class,$term,$session,$fatal_error) = @_;
+  $out = $out . function_header('Email list');
+  my $class_dir = class_dir($user_dir,$term,$class);
+  unless (-d $class_dir) {$fatal_error = "No such directory: $class_dir"}
+  if (!$fatal_error) {
+    my @info_files = glob("$class_dir/*.info");
+    my @list = ();
+    foreach my $info(@info_files) {
+      open(F,"<$info") or $fatal_error="error opening file $info for input, $!";
+      local $/; # slurp whole file
+      my $data = <F>;
+      close F;
+      if ($data=~m/state\=\"normal\"/ && !($data=~m/disabled\=\"1\"/) && $data=~m/email\=\"([^"]+)\"/) {
+        push @list,$1;
+      }
+    }
+    $out = $out . (join ',',@list);
+  }
+  return ($out,$fatal_error);
+}
+
+sub function_header {
+  my $title = shift;
+  return "<h2>$title</h2>\n";
 }
 
 sub class_selection {
@@ -283,7 +330,7 @@ sub class_selection {
       push @l,("<b>".$t."</b>"); # the one they have already selected
     }
     else {
-      push @l,("<a href=\"".make_link(REPLACE=>'select_term',REPLACE_WITH=>$t,DELETE=>'(user|select_class)') . "\">$t</a>");
+      push @l,("<a href=\"".make_link(REPLACE=>'select_term',REPLACE_WITH=>$t,DELETE=>'(user|select_class|function)') . "\">$t</a>");
     }
   }
   $out = $out . join(' | ',@l);
@@ -298,7 +345,7 @@ sub class_selection {
         push @l,("<b>".$c."</b>"); # the one they have already selected
       }
       else {
-        push @l,("<a href=\"".make_link(REPLACE=>'select_class',REPLACE_WITH=>$c,DELETE=>'(user|select_term)') . "\">$c</a>");
+        push @l,("<a href=\"".make_link(REPLACE=>'select_class',REPLACE_WITH=>$c,DELETE=>'(user|select_term|function)') . "\">$c</a>");
       }
     }
     $out = $out . join(' | ',@l);
@@ -306,6 +353,14 @@ sub class_selection {
   }
   
   return $out;
+}
+
+sub class_dir {
+  my $user_dir = shift;
+  my $term = shift;
+  my $class = shift;
+  if (!$class || !$term) {return undef}
+  return $user_dir . "/" . $term . "/" . $class;
 }
 
 sub list_classes {
