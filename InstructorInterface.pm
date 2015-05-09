@@ -110,11 +110,6 @@ sub user_dir {
   return data_dir() . '/' . $username;
 }
 
-sub tree {
-  my $data_dir = data_dir();
-  return FileTree->new(DATA_DIR=>"${data_dir}/",CLASS=>Url::par("class")); # fixme - no class= in url
-}
-
 sub session_id {
   return Url::par('sid') if Url::par_set('sid');
   return $session->id if ref($session);
@@ -198,7 +193,9 @@ sub run_interface {
   $out = $out .  tint('instructor_interface.header_html');
   $out = $out .  tint('instructor_interface.banner_html');
 
-  my $tree = tree();
+  $out = $out . "run mode = $run_mode<p>";
+
+  #  $session->param('test','bluh');
 
   $out = show_functions($out,$login);
 
@@ -207,9 +204,8 @@ sub run_interface {
 
   $out = $out . tint('instructor_interface.footer_html');
 
-  if ($run_mode eq 'do_log_out' || $run_mode eq 'public_anonymous_use') {$session->delete()}
+  if ($run_mode eq 'do_log_out') {$session->delete()}
 
-  $out = $out . "run mode = $run_mode<p>";
   if ($run_mode eq 'public_do_login_form') {$out = $out . do_login_form()}
 
   $session->flush();
@@ -231,11 +227,18 @@ sub show_functions {
 
   if ($login->logged_in()) {
     $out = $out . 
-               " | <a href=\"".Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'login',REPLACE_WITH=>'log_out',
+               " | <a href=\"".make_link(REPLACE=>'login',REPLACE_WITH=>'log_out',
                                             NOT_DELETE=>'',DELETE_ALL=>1)."\">log out</a><br>\n";
   }
 
   return $out;
+}
+
+sub make_link {
+  return Url::link (
+    INTERFACE => "InstructorInterface",
+    @_,
+  );
 }
 
 sub do_function {
@@ -265,7 +268,7 @@ sub do_login_form {
   my $out = '';
   $out = $out . "<b>Instructor: $username</b><br>\n";
   $out = $out . tint('instructor_interface.password_form',
-    'url'=>Url::link(INTERFACE=>'InstructorInterface',REPLACE=>'login',REPLACE_WITH=>'entered_password'),
+    'url'=>make_link(REPLACE=>'login',REPLACE_WITH=>'entered_password'),
     'username'=>$username,
   );
   return $out;
