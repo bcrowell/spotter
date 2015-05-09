@@ -301,17 +301,29 @@ sub do_email_list {
     my @info_files = glob("$class_dir/*.info");
     my @list = ();
     foreach my $info(@info_files) {
-      open(F,"<$info") or $fatal_error="error opening file $info for input, $!";
-      local $/; # slurp whole file
-      my $data = <F>;
-      close F;
-      if ($data=~m/state\=\"normal\"/ && !($data=~m/disabled\=\"1\"/) && $data=~m/email\=\"([^"]+)\"/) {
-        push @list,$1;
+      my ($d,$fatal_error) = get_student_info($info,$fatal_error);
+      my %d = %$d;
+      if ($d{state} eq 'normal' && $d{disabled} ne '1' && $d{email}=~/\w/) {
+        push @list,$d{email};
       }
     }
     $out = $out . (join ',',@list);
   }
   return ($out,$fatal_error);
+}
+
+sub get_student_info {
+  my $info = shift;
+  my $fatal_error = shift;
+  open(F,"<$info") or $fatal_error="error opening file $info for input, $!";
+  local $/; # slurp whole file
+  my $data = <F>;
+  close F;
+  my %h = ();
+  while ($data=~/(\w+)\=\"([^"]*)\"/g) {
+    $h{$1} = $2;
+  }
+  return (\%h,$fatal_error);  
 }
 
 sub function_header {
