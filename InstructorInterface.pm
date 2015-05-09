@@ -195,7 +195,20 @@ sub run_interface {
 
   $out = $out . "run mode = $run_mode<p>";
 
-  #  $session->param('test','bluh');
+  my $term = $session->param('term');
+  if (Url::par_set('select_term')) {$term = Url::par('select_term')}
+  my $class = $session->param('class');
+  if (Url::par_set('select_class')) {$class = Url::par('select_class')}
+
+  my $username = '';
+  my $user_dir = '';
+  if ($login->logged_in()) {
+    $username = $login->username();
+    $user_dir = user_dir($username);
+    if (! defined $term) {my @a = list_terms($user_dir); $term=$a[0]}
+  }
+
+  $out = class_selection($out,$user_dir,$term,$class) if $login->logged_in();
 
   $out = show_functions($out,$login);
 
@@ -237,6 +250,7 @@ sub show_functions {
 sub make_link {
   return Url::link (
     INTERFACE => "InstructorInterface",
+    DELETE=>'(user|select_term|select_class)',
     @_,
   );
 }
@@ -256,6 +270,84 @@ sub do_function {
   }
 
   return ($out,$fatal_error);
+}
+
+sub class_selection {
+  my ($out,$user_dir,$term,$class) = @_;
+
+  $out = $out . "<p><b>Term:</b> ";
+  my @terms = list_terms($user_dir);
+  my @l = ();
+  foreach my $t(@terms) {
+    if ($t eq $term) {
+      push @l,("<b>".$t."</b>"); # the one they have already selected
+    }
+    else {
+      push @l,("<a href=\"".make_link(REPLACE=>'select_term',REPLACE_WITH=>$t,DELETE=>'(user|select_class)') . "\">$t</a>");
+    }
+  }
+  $out = $out . join(' | ',@l);
+  $out = $out . "</p>";
+
+  if ($term ne '') {
+    $out = $out . "<p><b>Class:</b> ";
+    my @classes = list_classes($user_dir,$term);
+    my @l = ();
+    foreach my $c(@classes) {
+      if ($c eq $class) {
+        push @l,("<b>".$c."</b>"); # the one they have already selected
+      }
+      else {
+        push @l,("<a href=\"".make_link(REPLACE=>'select_class',REPLACE_WITH=>$c,DELETE=>'(user|select_term)') . "\">$c</a>");
+      }
+    }
+    $out = $out . join(' | ',@l);
+    $out = $out . "</p>";
+  }
+  
+  return $out;
+}
+
+sub list_classes {
+  my $user_dir = shift;
+  my $term = shift;
+  my $term_dir = $user_dir . "/" . $term;
+  my @classes = ();
+  foreach my $f(glob "$term_dir/*") {
+    if (-d $f) { 
+      $f =~ m@([^/]+)$@;
+      push @classes, $1;
+    }
+  }
+  return @classes;
+}
+
+sub list_terms {
+  my $user_dir = shift;
+  my @terms = ();
+  foreach my $t(glob "$user_dir/*") {
+      if (-d $t) {
+        $t =~ m@([^/]+)$@;
+        push @terms, $1;
+      }
+  }
+  @terms = sort { -compare_terms($a,$b) } @terms; # reverse chronological order
+  return @terms;
+}
+
+sub compare_terms {
+  my ($a,$b) = @_;
+  my %season_order = ('w'=>1,'s'=>2,'f'=>3);
+  my ($as,$ay) = parse_term($a);  
+  my ($bs,$by) = parse_term($b);
+  if ($ay!=$by) {return $ay <=> $by}
+  return $season_order{$as} <=> $season_order{$bs};
+}
+
+sub parse_term {
+  my $term = shift;
+  $term =~ m@(\w)(\d+)@;
+  return ($1,$2);
 }
 
 
