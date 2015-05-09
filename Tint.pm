@@ -99,6 +99,33 @@ I can\'t calculate the time it takes to hit the ground to 6 sig figs, because at
                                                        'raw_input'
                                                      ]
                                          },
+          'instructor_interface.create_term_form' => {
+                                                       'text' => [
+                                                                   [
+                                                                     'lit',
+                                                                     '<p>Each term has a name like s2003 for spring 2003, etc. The name must consist of
+a single letter followed by four digits.</p>
+
+<form method="POST" action="'
+                                                                   ],
+                                                                   [
+                                                                     'ref',
+                                                                     'action_url'
+                                                                   ],
+                                                                   [
+                                                                     'lit',
+                                                                     '">
+      Name of term: <input type="text" name="termName"><br/>
+<br>
+<input type="submit" name="createTermButton" value="Create">
+</form>
+'
+                                                                   ]
+                                                                 ],
+                                                       'args' => [
+                                                                   'action_url'
+                                                                 ]
+                                                     },
           'user.not_same_password_twice' => {
                                               'text' => [
                                                           [
@@ -1093,6 +1120,33 @@ function format_variable_name(x) {
                                         'body'
                                       ]
                           },
+          'instructor_interface.create_class_form' => {
+                                                        'text' => [
+                                                                    [
+                                                                      'lit',
+                                                                      '<p>Each class has a name, which must be a string of digits and lowercase letters.
+</p>
+<form method="POST" action="'
+                                                                    ],
+                                                                    [
+                                                                      'ref',
+                                                                      'action_url'
+                                                                    ],
+                                                                    [
+                                                                      'lit',
+                                                                      '">
+      Name of class (see above): <input type="text" name="className"><br/>
+      Description of class: <input type="text" name="classDescription"><br/>
+<br>
+<input type="submit" name="createClassButton" value="Create">
+</form>
+'
+                                                                    ]
+                                                                  ],
+                                                        'args' => [
+                                                                    'action_url'
+                                                                  ]
+                                                      },
           'instructor_interface.select_student_form' => {
                                                           'text' => [
                                                                       [

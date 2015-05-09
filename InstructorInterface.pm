@@ -88,6 +88,7 @@ sub setup {
   }
   if (Url::par_is("login","log_out"))    { $run_mode = 'do_log_out' }
   if (Url::par_is("login","entered_password") && ! (($self->authen->username)=~/\w/)) { $run_mode = 'public_log_in'}
+  if (!Url::par_set("sid")) {$run_mode = 'public_do_login_form'} # happens if I time out?
   $self->start_mode($run_mode);
   $self->run_modes([qw/
     public_do_login_form
@@ -193,14 +194,11 @@ sub run_interface {
   $out = $out .  tint('instructor_interface.header_html');
   $out = $out .  tint('instructor_interface.banner_html');
 
-  $out = $out . "run mode = $run_mode<p>";
+  # $out = $out . "run mode = $run_mode<p>";
 
   my $term = $session->param('term');
   if (Url::par_set('select_term')) {$term = Url::par('select_term')}
   if ($term) {$session->param('term',$term)}
-  my $class = $session->param('class');
-  if (Url::par_set('select_class')) {$class = Url::par('select_class')}
-  if ($class) {$session->param('class',$class)}
 
   my $username = '';
   my $user_dir = '';
@@ -209,6 +207,12 @@ sub run_interface {
     $user_dir = user_dir($username);
     if (! defined $term) {my @a = list_terms($user_dir); $term=$a[0]}
   }
+
+  my $class = $session->param('class');
+  if (Url::par_set('select_class')) {$class = Url::par('select_class')}
+  unless (is_legal_class($user_dir,$term,$class)) {$class=''; $session->param('class','')}
+  if ($class) {$session->param('class',$class)}
+  #$out = $out . "class = $class<p>";
 
   $out = class_selection($out,$user_dir,$term,$class) if $login->logged_in();
 
@@ -252,6 +256,8 @@ sub show_functions {
     push @functions,['email list',             1,{REPLACE=>'function',REPLACE_WITH=>'email_list',DELETE=>$del}];
     push @functions,['manage student accounts',1,{REPLACE=>'function',REPLACE_WITH=>'manage_accounts',DELETE=>$del}];
     push @functions,['add a student',1,{REPLACE=>'function',REPLACE_WITH=>'add',DELETE=>$del}];
+    push @functions,['create a new term',0,{REPLACE=>'function',REPLACE_WITH=>'create_term',DELETE=>$del}];
+    push @functions,['create a new class',0,{REPLACE=>'function',REPLACE_WITH=>'create_class',DELETE=>$del}];
     $out = $out . "<p>".join(' | ',map {
       my $x = $_;
       my ($label,$class_required,$pars) = ($x->[0],$x->[1],$x->[2]);
@@ -288,6 +294,8 @@ sub do_function {
   if ($function eq 'email_list') {($out,$fatal_error) = do_email_list(@stuff)}
   if ($function eq 'manage_accounts') {($out,$fatal_error) = do_manage_accounts(@stuff)}
   if ($function eq 'add') {($out,$fatal_error) = do_add(@stuff)}
+  if ($function eq 'create_term') {($out,$fatal_error) = do_create_term(@stuff)}
+  if ($function eq 'create_class') {($out,$fatal_error) = do_create_class(@stuff)}
 
   if ($run_mode eq 'do_log_out' && $session->param('referer')) {
     $out = $out . "<p><a href=\"".$session->param('referer')."\">Click here to return to the page that took you here.</a></p>"
@@ -295,6 +303,87 @@ sub do_function {
 
   return ($out,$fatal_error);
 }
+
+
+
+sub do_create_term {
+  my ($out,$function,$user_dir,$class,$term,$session,$fatal_error) = @_;
+  my $step = Url::par('step')+0;
+  $out = $out . function_header("Create a new term: step $step");
+  if ($step==1) {
+    $out = $out . tint('instructor_interface.create_term_form',
+      'action_url'=>make_link(REPLACE=>'step',REPLACE_WITH=>'2',DELETE=>'(user|select_term|select_class)')
+    );
+  }
+  if ($step==2) {
+    my $term = $SpotterHTMLUtil::cgi->param('termName');
+    $fatal_error = create_term($term,$user_dir,$fatal_error);
+    unless ($fatal_error) {$out = $out . "Successfully created term $term"; set_term($session,$term)}
+  }
+  return ($out,$fatal_error);
+}
+
+sub set_term {
+  my ($session,$term) = @_;
+  $session->param('term',$term);
+}
+
+sub do_create_class {
+  my ($out,$function,$user_dir,$class,$term,$session,$fatal_error) = @_;
+  my $step = Url::par('step')+0;
+  $out = $out . function_header("Create a new term: step $step");
+  if ($step==1) {
+    $out = $out . tint('instructor_interface.create_class_form',
+      'action_url'=>make_link(REPLACE=>'step',REPLACE_WITH=>'2',DELETE=>'(user|select_term|select_class)')
+    );
+  }
+  if ($step==2) {
+    my $class = $SpotterHTMLUtil::cgi->param('className');
+    my $descr = $SpotterHTMLUtil::cgi->param('classDescription');
+    $fatal_error = create_class($term,$class,$descr,$user_dir,$fatal_error);
+    unless ($fatal_error) {
+      my $url = make_link(REPLACE=>'step',REPLACE_WITH=>'3',DELETE=>'(user|select_term|select_class)');
+      $out = $out . "<p><a href=\"$url\">Click here</a> to continue.<p>"; # kludge: already did it, but need additional step so it shows up properly at top of screen
+      $session->param('save_class',$class);
+      $session->param('class',$class);
+    }
+  }
+  if ($step==3) {
+    $class = $session->param('save_class');
+    $session->clear('save_class');
+    $session->param('class',$class);
+    $out = $out . "<p>Successfully created class $class.<p>";
+  }
+  return ($out,$fatal_error);
+}
+
+sub create_term {
+  my ($term,$user_dir,$fatal_error) = @_;
+  if (!($term =~ m/^[a-z]\d\d\d\d$/)) {return "Illegal term name."}
+  my $term_dir = "$user_dir/$term";
+  if (-e $term_dir) {return "The directory $term_dir already exists."}
+  mkdir($term_dir) or return "Error creating directory $term_dir";
+  chmod 0771, $term_dir;
+  # $fatal_error = set_group($term_dir,$server_group,$fatal_error); # doesn't work
+  return $fatal_error;
+}
+
+sub create_class {
+  my ($term,$class,$description,$user_dir,$fatal_error) = @_;
+  if (!($class =~ m/^[a-z0-9]+$/)) {return "Illegal class name."}
+  my $class_dir = "$user_dir/$term/$class";
+  if (-e $class_dir) {return "Error -- the directory $class_dir already exists."}
+  mkdir($class_dir) or return "Error creating directory $class_dir";
+  chmod 0771, $class_dir;
+  $description =~ s/\"//g;
+  my $info_file = "$class_dir/info";
+  open(FILE,">$info_file") or return "Error opening info file $info_file for output";
+  print FILE "description=\"$description\"\n";
+  close(FILE);
+  system("chmod ug+rw $info_file");
+  return $fatal_error;
+}
+
 
 sub do_add {
   my ($out,$function,$user_dir,$class,$term,$session,$fatal_error) = @_;
@@ -332,36 +421,17 @@ sub add_one_student {
 
   if (-e $file) { return "Error: file $file already exists"}
 
-  open(FILE,">$file") or return { "unable to open file $file for output\n$!"}
+  open(FILE,">$file") or return "unable to open file $file for output, $!";
   print FILE "last=\"$last\",first=\"$first\",id=\"$id\",disabled=\"0\"\n";
   print FILE "state=\"notactivated\",password=\"$p\"\n";
   close(FILE);
   if (!-e $file) {return "Error creating $file"}
-  $fatal_error = set_group($file,$server_group,$fatal_error); # dies if there's an error
+
+  # $fatal_error = set_group($file,server_group(),$fatal_error); # doesn't work
   system("chmod ug+w $file");
 
   return $fatal_error;
 
-}
-
-sub set_group {
-  my ($file,$group,$fatal_error) = @_;
-  if (($file=~m/\.\./) || !($file=~m/^[\w\/\.\-]+$/)) {
-    return "Illegal characters in filename, setting group of file $file"; # security
-  }
-  my $groups_i_am_in = `groups`;
-  my $q = quotemeta $group;
-  unless ($groups_i_am_in =~ /$group/) {
-    return "Attempted to set group of $file to $group. You need to be a member of group $group in order to do this. The command groups tells you what groups you're a member of. To add yourself to a group, edit /etc/group, log out, and log back in.";
-  }
-  my $cmd = "chgrp $group $file";
-  system("$cmd");
-  my $err = $!;
-  if (get_group($file) ne $group) {
-    return "Error setting group of $file to $group, $err, command $cmd";
-  }
-
-  return $fatal_error;
 }
 
 
@@ -374,11 +444,15 @@ sub do_manage_accounts {
   my @keys = @$k; # sorted list of keys
   if ($step==1) {
     my @o = ();
+    my $did_separator = 0;
     foreach my $key(@keys) {
       my $last = $r->{$key}->{last};
       my $first = $r->{$key}->{first};
       my $flag = '';
-      if ($r->{$key}->{disabled}) {$flag = " (account disabled)"}
+      if ($r->{$key}->{disabled}) {
+        if (!$did_separator) {push @o,"<option disabled>----------</option>"; $did_separator=1}
+        $flag = " (account disabled)";
+      }
       push @o,"<option value=\"$key\">$last, $first$flag</option>";
     }
     $out = $out . tint('instructor_interface.select_student_form',
@@ -451,7 +525,7 @@ sub do_email_list {
   my ($out,$function,$user_dir,$class,$term,$session,$fatal_error) = @_;
   $out = $out . function_header('Email list');
   my $class_dir = class_dir($user_dir,$term,$class);
-  unless (-d $class_dir) {$fatal_error = "No such directory: $class_dir"}
+  unless (-d $class_dir) {$fatal_error = "No such directory: $class_dir, class=$class, term=$term"}
   if (!$fatal_error) {
     my @info_files = glob("$class_dir/*.info");
     my @list = ();
@@ -548,6 +622,7 @@ sub class_selection {
       }
     }
     $out = $out . join(' | ',@l);
+    if (!@l) {$out = $out . " (no classes defined yet)"}
     $out = $out . "</p>";
   }
   
@@ -574,6 +649,16 @@ sub list_classes {
     }
   }
   return @classes;
+}
+
+sub is_legal_class {
+  my ($user_dir,$term,$class) = @_;
+  if (!$term) {return 0}
+  my @classes = list_classes($user_dir,$term);
+  foreach my $c(@classes) {
+    if ($c eq $class) {return 1}
+  }
+  return 0;
 }
 
 sub list_terms {
@@ -618,4 +703,39 @@ sub do_login_form {
     'username'=>$username,
   );
   return $out;
+}
+
+sub server_group {
+  return get_group("/usr/lib/cgi-bin/spotter3/data"); # fixme - shouldn't be hardcoded here
+}
+
+sub get_group {
+  my $file = shift;
+  # Could do this with stat function, but I'd rather work with symbolic group name, not numerical ID.
+  my $listing = `ls -ld $file`; # output like --->  drwxr-xr-x    5 root     apache       4096 Jun 16  2003 /var/www/cgi-bin/$
+  $listing =~ m/^\s*[^\s]+\s+\d+\s+\w+\s+([\w\-\d]+)/;
+  my $group = $1;
+  return $group;
+}
+
+sub set_group { # don't use, fails with operation not permitted
+  my ($file,$group,$fatal_error) = @_;
+  if (($file=~m/\.\./) || !($file=~m/^[\w\/\.\-]+$/)) {
+    return "Illegal characters in filename, setting group of file $file"; # security
+  }
+  my $groups_i_am_in = `groups`;
+  my $q = quotemeta $group;
+  unless ($groups_i_am_in =~ /$group/) {
+    return "Attempted to set group of $file to $group. You need to be a member of group $group in order to do this. The command groups tells you what groups you're a member of. To add yourself to a group, edit /etc/group, log out, and log back in.";
+  }
+
+  if (0) { # fails with operation not permitted
+    chown -1,getgrnam($group),$file;
+    my $err = $!;
+    if (get_group($file) ne $group) {
+      return "Error setting group of $file to $group, $err, trying to do chown -1,getgrnam($group),$file";
+    }
+  }
+
+  return $fatal_error;
 }

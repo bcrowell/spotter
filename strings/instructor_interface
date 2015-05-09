@@ -55,3 +55,25 @@ add_student_form=<<__form__
 <input type="submit" name="submitAddStudentButton" value="Add">
 </form>
 __form__
+
+create_term_form=<<__form__
+<p>Each term has a name like s2003 for spring 2003, etc. The name must consist of
+a single letter followed by four digits.</p>
+
+<form method="POST" action="$action_url">
+      Name of term: <input type="text" name="termName"><br/>
+<br>
+<input type="submit" name="createTermButton" value="Create">
+</form>
+__form__
+
+create_class_form=<<__form__
+<p>Each class has a name, which must be a string of digits and lowercase letters.
+</p>
+<form method="POST" action="$action_url">
+      Name of class (see above): <input type="text" name="className"><br/>
+      Description of class: <input type="text" name="classDescription"><br/>
+<br>
+<input type="submit" name="createClassButton" value="Create">
+</form>
+__form__
