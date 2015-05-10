@@ -256,6 +256,7 @@ sub show_functions {
     push @functions,['email list',             1,{REPLACE=>'function',REPLACE_WITH=>'email_list',DELETE=>$del}];
     push @functions,['manage student accounts',1,{REPLACE=>'function',REPLACE_WITH=>'manage_accounts',DELETE=>$del}];
     push @functions,['add a student',1,{REPLACE=>'function',REPLACE_WITH=>'add',DELETE=>$del}];
+    push @functions,['add multiple students',1,{REPLACE=>'function',REPLACE_WITH=>'add_many',DELETE=>$del}];
     push @functions,['create a new term',0,{REPLACE=>'function',REPLACE_WITH=>'create_term',DELETE=>$del}];
     push @functions,['create a new class',0,{REPLACE=>'function',REPLACE_WITH=>'create_class',DELETE=>$del}];
     $out = $out . "<p>".join(' | ',map {
@@ -294,6 +295,7 @@ sub do_function {
   if ($function eq 'email_list') {($out,$fatal_error) = do_email_list(@stuff)}
   if ($function eq 'manage_accounts') {($out,$fatal_error) = do_manage_accounts(@stuff)}
   if ($function eq 'add') {($out,$fatal_error) = do_add(@stuff)}
+  if ($function eq 'add_many') {($out,$fatal_error) = do_add_many(@stuff)}
   if ($function eq 'create_term') {($out,$fatal_error) = do_create_term(@stuff)}
   if ($function eq 'create_class') {($out,$fatal_error) = do_create_class(@stuff)}
 
@@ -402,6 +404,116 @@ sub do_add {
     $fatal_error = add_one_student($last,$first,$id,$class_dir,$fatal_error);
     #$out = $out . "first=$first last=$last id=$id";
     unless ($fatal_error) {$out = $out . "Successfully added $last, $first, student ID $id"}
+  }
+  return ($out,$fatal_error);
+}
+
+sub do_add_many {
+  my ($out,$function,$user_dir,$class,$term,$session,$fatal_error) = @_;
+  my $step = Url::par('step')+0;
+  my $class_dir = class_dir($user_dir,$term,$class);
+  $out = $out . function_header("Add multiple students: step $step");
+  if ($step==1) {
+    $out = $out . tint('instructor_interface.add_many_form',
+      'action_url'=>make_link(REPLACE=>'step',REPLACE_WITH=>'2',DELETE=>'(user|select_term|select_class)')
+    );
+  }
+  if ($step==2) {
+    my $t = $SpotterHTMLUtil::cgi->param('spreadsheet');
+    $t =~ s/\s+$//g; # strip trailing whitespace, e.g., extra newlines
+    my $table = '';
+    my @lines = split /\n/,$t;
+    my $first_line = 1;
+    my @data = ();
+    foreach my $line(@lines) {
+      my @cols = split /\t/,$line;
+      my @r = ();
+      if ($first_line) {
+        $first_line = 0;
+        my $ncol=@cols;
+        $table = $table . "<tr>\n";
+        for (my $i=1; $i<=$ncol; $i++) {$table = $table . "<td><b>column $i</b></td>"}
+        $table = $table . "\n</tr>\n";
+      }
+      $table = $table . "<tr>\n";
+      foreach my $col(@cols) {
+        $col =~ s/^\s+//; # trim leading whitespace
+        $col =~ s/\s+$//; # ...and trailing whitespace
+        $table = $table . "<td>$col</td> ";
+        push @r,$col;
+      }
+      push @data,\@r;
+      $table = $table . "\n</tr>\n";
+    }
+    my @json_rows = ();
+    foreach my $r(@data) {
+      push @json_rows, '[' . join(",",map {"\"$_\""} @$r) .']';
+    }
+    my $json = '[' . join(',',@json_rows)  . ']';
+    $out = $out . tint('instructor_interface.show_spreadsheet','table'=>$table);
+    $session->param('spreadsheet',$json);
+    $out = $out . tint("instructor_interface.interpret_spreadsheet_form",
+      'action_url'=>make_link(REPLACE=>'step',REPLACE_WITH=>'3',DELETE=>'(user|select_term|select_class)')
+      );
+    #$fatal_error = add_one_student($last,$first,$id,$class_dir,$fatal_error);
+    #$out = $out . "first=$first last=$last id=$id";
+    #unless ($fatal_error) {$out = $out . "Successfully added $last, $first, student ID $id"}
+  }
+  if ($step==3) {
+    my $l_col = $SpotterHTMLUtil::cgi->param('lastNameColumn')-1;
+    my $f_col = $SpotterHTMLUtil::cgi->param('firstNameColumn')-1;
+    my $lf_col = $SpotterHTMLUtil::cgi->param('lastFirstNameColumn')-1;
+    my $id_col = $SpotterHTMLUtil::cgi->param('IDColumn')-1;
+    my $json = $session->param('spreadsheet');
+    my $data = from_json($json);
+    my @d = ();
+    foreach my $r(@$data) {
+      my ($last,$first,$id) = ('','','');
+      if ($l_col) {$last = $r->[$l_col]}
+      if ($f_col) {$first = $r->[$f_col]}
+      if ($lf_col) {
+        my $lf = $r->[$lf_col];
+        $lf =~ /(.*),(.*)/;
+        ($last,$first) = ($1,$2);
+      }
+      if ($id_col) {$id = $r->[$id_col]}
+      $id =~ s/^\@//; # trim leading @ sign from FC ID numbers
+      # trim leading and trailing whitespace
+      $first =~ s/^\s+//;
+      $first =~ s/\s+$//;
+      $last =~ s/^\s+//;
+      $last =~ s/\s+$//;
+      $first =~ s/\s+.*//;      # trim middle initial or middle name
+      $out = $out . "last=$last, first=$first, id=$id<br/>";
+      push @d,[$last,$first,$id];
+    }
+    my @json_rows = ();
+    foreach my $r(@d) {
+      push @json_rows, '[' . join(",",map {"\"$_\""} @$r) .']';
+    }
+    my $json = '[' . join(',',@json_rows)  . ']';
+    # $out = $out . "<p>$json</p>";
+    $session->param('students_to_add',$json);
+    my $url = make_link(REPLACE=>'step',REPLACE_WITH=>'4',DELETE=>'(user|select_term|select_class)');
+    $out = $out . "<p><a href=\"$url\">Click here</a> to add these students.<p>";
+  }
+  if ($step==4) {
+    my $json = $session->param('students_to_add');
+    my $data = from_json($json);
+    my ($fail,$success) = (0,0);
+    foreach my $r(@$data) {
+      my ($last,$first,$id) = @$r;
+      $out = $out . "last=$last, first=$first, id=$id<br/>";
+      my $err = add_one_student($last,$first,$id,$class_dir,'');
+      if ($err) {
+        $out = $out . "<p>Error adding student, last=$last, first=$first, id=$id: $err</p>";
+        $fail += 1;
+      }
+      else {
+        $success += 1;
+      }
+    }
+    $out = $out . "$success students added successfully. $fail failures.";
   }
   return ($out,$fatal_error);
 }

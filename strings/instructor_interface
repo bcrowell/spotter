@@ -77,3 +77,38 @@ create_class_form=<<__form__
 <input type="submit" name="createClassButton" value="Create">
 </form>
 __form__
+
+add_many_form=<<__form__
+<p>This interface is designed so that you can cut and paste from either a spreadsheet or a web page
+in which a class roster is formatted as an html table. When you paste into the text box below,
+the columns show show up with tab characters separating them. You need columns containing the students'
+names and also (optionally) their student ID numbers.
+</p>
+<form method="POST" action="$action_url">
+      Cut and paste here:<br/> <textarea name="spreadsheet" cols="100" rows="10"></textarea>
+<br>
+<input type="submit" name="addManySubmitButton" value="Submit">
+</form>
+__form__
+
+
+show_spreadsheet=<<__html__
+<div style="width: 1200px; height: 150px; overflow: scroll;">
+  <table border="1">
+    $table
+  </table>
+</div>
+__html__
+
+interpret_spreadsheet_form=<<__html__
+In the spaces below, enter the numbers of the columns containing the relevant data. You don't need to
+fill in every blank.
+<form method="POST" action="$action_url">
+      Last name in column: <input type="text" name="lastNameColumn"><br/>  
+      First name in column: <input type="text" name="firstNameColumn"><br/>  
+      Last,first in column: <input type="text" name="lastFirstNameColumn"><br/>  
+      Student ID in column: <input type="text" name="IDColumn"><br/>  
+<br>
+<input type="submit" name="submitColumnsButton" value="Submit">
+</form> 
+__html__

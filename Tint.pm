@@ -37,6 +37,35 @@ the class to have access to this e-mail address.<br>
                                                             ],
                                                   'args' => []
                                                 },
+          'instructor_interface.interpret_spreadsheet_form' => {
+                                                                 'text' => [
+                                                                             [
+                                                                               'lit',
+                                                                               'In the spaces below, enter the numbers of the columns containing the relevant data. You don\'t need to
+fill in every blank.
+<form method="POST" action="'
+                                                                             ],
+                                                                             [
+                                                                               'ref',
+                                                                               'action_url'
+                                                                             ],
+                                                                             [
+                                                                               'lit',
+                                                                               '">
+      Last name in column: <input type="text" name="lastNameColumn"><br/>  
+      First name in column: <input type="text" name="firstNameColumn"><br/>  
+      Last,first in column: <input type="text" name="lastFirstNameColumn"><br/>  
+      Student ID in column: <input type="text" name="IDColumn"><br/>  
+<br>
+<input type="submit" name="submitAddStudentButton" value="Submit">
+</form> 
+'
+                                                                             ]
+                                                                           ],
+                                                                 'args' => [
+                                                                             'action_url'
+                                                                           ]
+                                                               },
           'instructor_interface.add_student_form' => {
                                                        'text' => [
                                                                    [
@@ -126,6 +155,35 @@ a single letter followed by four digits.</p>
                                                                    'action_url'
                                                                  ]
                                                      },
+          'instructor_interface.add_many_form' => {
+                                                    'text' => [
+                                                                [
+                                                                  'lit',
+                                                                  '<p>This interface is designed so that you can cut and paste from either a spreadsheet or a web page
+in which a class roster is formatted as an html table. When you paste into the text box below,
+the columns show show up with tab characters separating them. You need columns containing the students\'
+names and also (optionally) their student ID numbers.
+</p>
+<form method="POST" action="'
+                                                                ],
+                                                                [
+                                                                  'ref',
+                                                                  'action_url'
+                                                                ],
+                                                                [
+                                                                  'lit',
+                                                                  '">
+      Cut and paste here:<br/> <textarea name="spreadsheet" cols="100" rows="10"></textarea>
+<br>
+<input type="submit" name="addManySubmitButton" value="Submit">
+</form>
+'
+                                                                ]
+                                                              ],
+                                                    'args' => [
+                                                                'action_url'
+                                                              ]
+                                                  },
           'user.not_same_password_twice' => {
                                               'text' => [
                                                           [
@@ -136,6 +194,30 @@ a single letter followed by four digits.</p>
                                                         ],
                                               'args' => []
                                             },
+          'instructor_interface.show_spreadsheet' => {
+                                                       'text' => [
+                                                                   [
+                                                                     'lit',
+                                                                     '<div style="width: 1200px; height: 150px; overflow: scroll;">
+  <table border="1">
+    '
+                                                                   ],
+                                                                   [
+                                                                     'ref',
+                                                                     'table'
+                                                                   ],
+                                                                   [
+                                                                     'lit',
+                                                                     '
+  </table>
+</div>
+'
+                                                                   ]
+                                                                 ],
+                                                       'args' => [
+                                                                   'table'
+                                                                 ]
+                                                     },
           'journal.is_locked' => {
                                    'text' => [
                                                [
