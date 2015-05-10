@@ -57,7 +57,7 @@ fill in every blank.
       Last,first in column: <input type="text" name="lastFirstNameColumn"><br/>  
       Student ID in column: <input type="text" name="IDColumn"><br/>  
 <br>
-<input type="submit" name="submitAddStudentButton" value="Submit">
+<input type="submit" name="submitColumnsButton" value="Submit">
 </form> 
 '
                                                                              ]
@@ -264,6 +264,31 @@ how to set a new password.<br>
                                                   'username'
                                                 ]
                                     },
+          'instructor_interface.show_og' => {
+                                              'text' => [
+                                                          [
+                                                            'lit',
+                                                            '<p>The following code can be pasted.
+into an OpenGrade file. (After pasting it in, you\'ll need to set the
+password again so that the digital watermark will be valid.)</p>
+<div style="width: 1200px; height: 150px; overflow: scroll;">
+    '
+                                                          ],
+                                                          [
+                                                            'ref',
+                                                            'code'
+                                                          ],
+                                                          [
+                                                            'lit',
+                                                            '
+</div>
+'
+                                                          ]
+                                                        ],
+                                              'args' => [
+                                                          'code'
+                                                        ]
+                                            },
           'checker.explain_email_privacy' => {
                                                'text' => [
                                                            [

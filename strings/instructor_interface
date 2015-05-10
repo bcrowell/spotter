@@ -100,6 +100,15 @@ show_spreadsheet=<<__html__
 </div>
 __html__
 
+show_og=<<__html__
+<p>The following code can be pasted.
+into an OpenGrade file. (After pasting it in, you'll need to set the
+password again so that the digital watermark will be valid.)</p>
+<div style="width: 1200px; height: 150px; overflow: scroll;">
+    $code
+</div>
+__html__
+
 interpret_spreadsheet_form=<<__html__
 In the spaces below, enter the numbers of the columns containing the relevant data. You don't need to
 fill in every blank.

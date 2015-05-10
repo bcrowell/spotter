@@ -257,6 +257,7 @@ sub show_functions {
     push @functions,['manage student accounts',1,{REPLACE=>'function',REPLACE_WITH=>'manage_accounts',DELETE=>$del}];
     push @functions,['add a student',1,{REPLACE=>'function',REPLACE_WITH=>'add',DELETE=>$del}];
     push @functions,['add multiple students',1,{REPLACE=>'function',REPLACE_WITH=>'add_many',DELETE=>$del}];
+    push @functions,['export roster to OpenGrade',1,{REPLACE=>'function',REPLACE_WITH=>'export_to_og',DELETE=>$del}];
     push @functions,['create a new term',0,{REPLACE=>'function',REPLACE_WITH=>'create_term',DELETE=>$del}];
     push @functions,['create a new class',0,{REPLACE=>'function',REPLACE_WITH=>'create_class',DELETE=>$del}];
     $out = $out . "<p>".join(' | ',map {
@@ -296,6 +297,7 @@ sub do_function {
   if ($function eq 'manage_accounts') {($out,$fatal_error) = do_manage_accounts(@stuff)}
   if ($function eq 'add') {($out,$fatal_error) = do_add(@stuff)}
   if ($function eq 'add_many') {($out,$fatal_error) = do_add_many(@stuff)}
+  if ($function eq 'export_to_og') {($out,$fatal_error) = do_export_to_og(@stuff)}
   if ($function eq 'create_term') {($out,$fatal_error) = do_create_term(@stuff)}
   if ($function eq 'create_class') {($out,$fatal_error) = do_create_class(@stuff)}
 
@@ -631,6 +633,28 @@ sub drop_disable_or_enable_account {
     close(FILE);
   }
   return $fatal_error;
+}
+
+sub do_export_to_og {
+  my ($out,$function,$user_dir,$class,$term,$session,$fatal_error) = @_;
+  $out = $out . function_header('Export roster to OpenGrade');
+  my $class_dir = class_dir($user_dir,$term,$class);
+  my ($k,$r,$fatal_error) = get_roster($user_dir,$class_dir,$fatal_error,0);
+  my @keys = @$k; # sorted list of keys
+  my %h;
+  foreach my $key(@keys) {
+    my $info = $r->{$key};
+    my $last = $info->{last};
+    my $first = $info->{first};
+    my $id = $info->{id};
+    $h{$key} = {'id'=>$id};
+    $key =~ m/([^_]*)_([^ \.]*)/;
+    my ($l,$f) = ($1,$2);   
+    if ($l ne lc($last)) {$h{$key}->{'last'} = $last}
+    if ($f ne lc($first)) {$h{$key}->{'first'} = $first}
+  }  
+  my $r =  '"roster":'.encode_json(\%h);
+  $out = $out . tint('instructor_interface.show_og','code'=>$r);
 }
 
 sub do_email_list {
