@@ -26,6 +26,7 @@ use Spotter;
 use Login;
 use FileTree;
 use WorkFile;
+use Query;
 use BulletinBoard;
 use Email;
 use AnswerResponse;
@@ -252,14 +253,16 @@ sub show_functions {
     my @functions = ();
     # description,class must be selected,url parameters
     my $del = '(user|select_term|select_class|login)';
-    push @functions,['log out',0,{REPLACE=>'login',REPLACE_WITH=>'log_out',NOT_DELETE=>'',DELETE_ALL=>1}];
     push @functions,['email list',             1,{REPLACE=>'function',REPLACE_WITH=>'email_list',DELETE=>$del}];
+    push @functions,['view work',             1,{REPLACE=>'function',REPLACE_WITH=>'work',DELETE=>$del}];
     push @functions,['manage student accounts',1,{REPLACE=>'function',REPLACE_WITH=>'manage_accounts',DELETE=>$del}];
+    push @functions,['roster',1,{REPLACE=>'function',REPLACE_WITH=>'roster',DELETE=>$del}];
+    push @functions,['export roster to OpenGrade',1,{REPLACE=>'function',REPLACE_WITH=>'export_to_og',DELETE=>$del}];
     push @functions,['add a student',1,{REPLACE=>'function',REPLACE_WITH=>'add',DELETE=>$del}];
     push @functions,['add multiple students',1,{REPLACE=>'function',REPLACE_WITH=>'add_many',DELETE=>$del}];
-    push @functions,['export roster to OpenGrade',1,{REPLACE=>'function',REPLACE_WITH=>'export_to_og',DELETE=>$del}];
     push @functions,['create a new term',0,{REPLACE=>'function',REPLACE_WITH=>'create_term',DELETE=>$del}];
     push @functions,['create a new class',0,{REPLACE=>'function',REPLACE_WITH=>'create_class',DELETE=>$del}];
+    push @functions,['log out',0,{REPLACE=>'login',REPLACE_WITH=>'log_out',NOT_DELETE=>'',DELETE_ALL=>1}];
     $out = $out . "<p>".join(' | ',map {
       my $x = $_;
       my ($label,$class_required,$pars) = ($x->[0],$x->[1],$x->[2]);
@@ -298,6 +301,8 @@ sub do_function {
   if ($function eq 'add') {($out,$fatal_error) = do_add(@stuff)}
   if ($function eq 'add_many') {($out,$fatal_error) = do_add_many(@stuff)}
   if ($function eq 'export_to_og') {($out,$fatal_error) = do_export_to_og(@stuff)}
+  if ($function eq 'roster') {($out,$fatal_error) = do_roster(@stuff)}
+  if ($function eq 'work') {($out,$fatal_error) = do_work(@stuff)}
   if ($function eq 'create_term') {($out,$fatal_error) = do_create_term(@stuff)}
   if ($function eq 'create_class') {($out,$fatal_error) = do_create_class(@stuff)}
 
@@ -308,7 +313,118 @@ sub do_function {
   return ($out,$fatal_error);
 }
 
+sub do_roster {
+  my ($out,$function,$user_dir,$class,$term,$session,$fatal_error) = @_;
+  my $class_dir = class_dir($user_dir,$term,$class);
+  $out = $out . function_header("Roster");
+  my ($k,$r,$fatal_error) = get_roster($user_dir,$class_dir,$fatal_error,1);
+  my @keys = @$k; # sorted list of keys
+  my @o = ();
+  foreach my $key(@keys) {
+    my $last = $r->{$key}->{last};
+    my $first = $r->{$key}->{first};
+    my $flag = '';
+    if (!($r->{$key}->{disabled})) {
+      push @o,"<p>$last, $first</p>"
+    }
+  }
+  $out = $out . join("\n",@o);
+  return ($out,$fatal_error);
+}
 
+sub do_work {
+  my ($out,$function,$user_dir,$class,$term,$session,$fatal_error) = @_;
+  my $step = Url::par('step')+0;
+  $out = $out . function_header("View work: step $step");
+  if ($step==1) {
+    my $default_due_date = "2017-01-01 10:00:00";
+    $out = $out . tint('instructor_interface.view_work_form',
+      'action_url'=>make_link(REPLACE=>'step',REPLACE_WITH=>'2',DELETE=>'(user|select_term|select_class)'),
+      'default_due_date'=>$default_due_date
+    );
+  }
+  if ($step==2) {
+    my $probs = $SpotterHTMLUtil::cgi->param('problemsToView');
+    my $answer_file = $SpotterHTMLUtil::cgi->param('answerFile');
+    my $due_date = $SpotterHTMLUtil::cgi->param('dueDate');
+    ($out,$fatal_error) = get_work($out,$probs,$answer_file,$due_date,$user_dir,$class,$term,$session,$fatal_error);
+  }
+  return ($out,$fatal_error);
+}
+
+sub get_work {
+  my ($out,$probs,$answer_file,$due_date,$user_dir,$class,$term,$session,$fatal_error) = @_;
+  my $class_dir = class_dir($user_dir,$term,$class);
+  my ($k,$r);
+  ($k,$r,$fatal_error) = get_roster($user_dir,$class_dir,$fatal_error,1);
+  if ($fatal_error) {return ($out,$fatal_error)}
+  $probs =~ s/^\s+//; # strip leading whitespace
+  $probs =~ s/\s+$//; # strip trailing whitespace
+  my @p = split /\s+/,$probs;
+  my @parsed_probs = ();
+  foreach my $p(@p) {
+    if ($p =~ /(\d+)\-([\w\d]+)/) {
+      push @parsed_probs,[$1,$2];
+    }
+    else {
+      return ($out,"Illegal format for problem number: $p");
+    }
+  }
+
+  my @keys = @$k; # sorted list of keys
+
+  # kludge: if problem 21-2 has parts a, b, and c, detect that based on which ones students actually entered answers for
+  my @prob_parts = ();
+  foreach my $p(@parsed_probs) {
+    my $ch = $p->[0];
+    my $num = $p->[1];
+    my %parts = ();
+    foreach my $key(@keys) {
+      if (!($r->{$key}->{disabled})) {
+        my $work_file = "$class_dir/$key.work";
+        my $query = "file=$answer_file&chapter=$ch&problem=$num";
+        my $parts = WorkFile::find_parts_that_exist($query,$work_file); # array ref
+        foreach my $x(@$parts) {$parts{$x} = 1}
+      }
+    }
+    my $parts_list = join(',',(keys %parts));
+    push @prob_parts,$parts_list;
+    #$out = $out . "<p>problem $ch-$num has parts $parts_list</p>";
+  }
+
+  my @o = ();
+  foreach my $key(@keys) {
+    my $last = $r->{$key}->{last};
+    my $first = $r->{$key}->{first};
+    my $flag = '';
+    if (!($r->{$key}->{disabled})) {
+      my $work_file = "$class_dir/$key.work";
+      my @scores = ();
+      foreach my $p(@p) {push @scores,0} # by default, scores are zero
+      if (-e $work_file) {
+        my $i=0;
+        foreach my $p(@parsed_probs) {
+          my @parts = split(/,/,$prob_parts[$i]);
+          my $ch = $p->[0];
+          my $num = $p->[1];
+          my $credit = 1;
+          foreach my $part(@parts) {
+            my $query = "file=$answer_file&chapter=$ch&problem=$num&find=$part";
+            my $time_zone_correction = 0;
+            $credit = $credit &&
+                  WorkFile::look_for_correct_answer_given_work_file($query,$due_date,$time_zone_correction,$work_file);
+          }
+          $scores[$i] = $credit;
+          $i = $i+1;
+        }
+      }
+      push @o,"<tr><td>$last, $first</td>".join(' ',map {"<td>$_</td>"} @scores)."</tr>"
+    }
+  }
+  my $headers = join(' ',map {"<td>$_</td>"} ('',@p));
+  $out = $out . "\n<table>\n<tr>$headers</tr>" . join("\n",@o) . "</table>\n";
+  return ($out,$fatal_error);
+}
 
 sub do_create_term {
   my ($out,$function,$user_dir,$class,$term,$session,$fatal_error) = @_;

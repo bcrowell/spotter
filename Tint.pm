@@ -155,6 +155,42 @@ a single letter followed by four digits.</p>
                                                                    'action_url'
                                                                  ]
                                                      },
+          'instructor_interface.view_work_form' => {
+                                                     'text' => [
+                                                                 [
+                                                                   'lit',
+                                                                   '<p>Enter a list of problems separated by blanks, e.g., 2-17 3-9.</p>
+<form method="POST" action="'
+                                                                 ],
+                                                                 [
+                                                                   'ref',
+                                                                   'action_url'
+                                                                 ],
+                                                                 [
+                                                                   'lit',
+                                                                   '">
+      Problems: <input type="text" size="100" name="problemsToView"><br/>
+      Due date: <input type="text" value="'
+                                                                 ],
+                                                                 [
+                                                                   'ref',
+                                                                   'default_due_date'
+                                                                 ],
+                                                                 [
+                                                                   'lit',
+                                                                   '" name="dueDate"><br/>
+      Answer file: <input type="text" value="lm" name="answerFile"><br/>
+<br>
+<input type="submit" name="viewWorkButton" value="View">
+</form>
+'
+                                                                 ]
+                                                               ],
+                                                     'args' => [
+                                                                 'action_url',
+                                                                 'default_due_date'
+                                                               ]
+                                                   },
           'instructor_interface.add_many_form' => {
                                                     'text' => [
                                                                 [

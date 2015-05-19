@@ -68,6 +68,14 @@ sub look_for_correct_answer {
           my $due_string = shift;
           my $time_zone_correction = shift; # positive if client is east of server
           my $work_file = $tree->student_work_file_name($student);
+          return look_for_correct_answer_given_work_file($query,$due_string,$time_zone_correction,$work_file);
+}
+
+sub look_for_correct_answer_given_work_file { # called by look_for_correct_answer() and also by InstructorInterface.pm
+          my $query = shift;
+          my $due_string = shift;
+          my $time_zone_correction = shift; # positive if client is east of server
+          my $work_file = shift;
           $due_string =~ m/(\d+)-(\d+)-(\d+) (\d+):(\d+)/;
           my $due = sprintf "%04d-%02d-%02d %02d:%02d:%02d",$1,$2,$3,($4-$time_zone_correction),$5,0; # bug for nonintegral time zone
           if (open(FILE,"<$work_file")) {
@@ -101,6 +109,33 @@ sub look_for_correct_answer {
             close FILE;
           }
           return 0;
+}
+
+sub find_parts_that_exist { # kludge: if problem 21-2 has parts a, b, and c, detect that based on which ones students actually entered answers for
+          my $query = shift;
+          my $work_file = shift;
+          my @parts = ();
+          if (open(FILE,"<$work_file")) {
+            while (my $line = <FILE>) {
+              $line =~ m/^([^,]*),(\d+)\n?$/;
+              my ($what,$n_lines) = ($1,$2);
+              my $q;
+              my $got_q = 0;
+              for (my $i=1; $i<=$n_lines; $i++) {
+                  $line = <FILE>;
+                  $line =~ m/^\s*([^:]+)\:\s*([^\s].*)\n?$/;
+                  my ($field,$value) = ($1,$2);
+                  if ($what eq 'answer') {
+                    if ($field eq 'query') {$q = Query->new($value);$got_q=1}
+                  }
+              }
+              if ($got_q && queries_are_alike_except_find($q->{STRING},$query)) {
+                if ($q->{STRING} =~ /find=(\d+)/) {push @parts,$1}
+              }
+            }
+          }
+          close FILE;
+          return \@parts;
 }
 
 sub report_answers_on_one_problem {
@@ -214,7 +249,21 @@ sub queries_are_alike {
 
 sub filter_crap_from_query {
   my $a = shift;
-  my $crap = "class|username|correct|book|sid";
+  my $crap = "class|username|correct|book|sid|part";
+  $a =~ s/($crap)=[\w\d\/]+\&//g;
+  $a =~ s/\&($crap)=[\w\d\/]+//g;
+  return $a;
+}
+
+sub queries_are_alike_except_find {
+  my $a = shift;
+  my $b = shift;
+  return filter_more_crap_from_query($a) eq filter_more_crap_from_query($b);
+}
+
+sub filter_more_crap_from_query {
+  my $a = shift;
+  my $crap = "class|username|correct|book|sid|part|find";
   $a =~ s/($crap)=[\w\d\/]+\&//g;
   $a =~ s/\&($crap)=[\w\d\/]+//g;
   return $a;

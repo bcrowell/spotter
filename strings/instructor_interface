@@ -56,6 +56,17 @@ add_student_form=<<__form__
 </form>
 __form__
 
+view_work_form=<<__form__
+<p>Enter a list of problems separated by blanks, e.g., 2-17 3-9.</p>
+<form method="POST" action="$action_url">
+      Problems: <input type="text" size="100" name="problemsToView"><br/>
+      Due date: <input type="text" value="$default_due_date" name="dueDate"><br/>
+      Answer file: <input type="text" value="lm" name="answerFile"><br/>
+<br>
+<input type="submit" name="viewWorkButton" value="View">
+</form>
+__form__
+
 create_term_form=<<__form__
 <p>Each term has a name like s2003 for spring 2003, etc. The name must consist of
 a single letter followed by four digits.</p>
