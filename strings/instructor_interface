@@ -57,7 +57,7 @@ add_student_form=<<__form__
 __form__
 
 view_work_form=<<__form__
-<p>Enter a list of problems separated by blanks, e.g., 2-17 3-9.</p>
+<p>Enter a list of problems separated by blanks, e.g., 32-3 33-2.</p>
 <form method="POST" action="$action_url">
       Problems: <input type="text" size="100" name="problemsToView"><br/>
       Due date: <input type="text" value="$default_due_date" name="dueDate"><br/>

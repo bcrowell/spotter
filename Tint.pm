@@ -159,7 +159,7 @@ a single letter followed by four digits.</p>
                                                      'text' => [
                                                                  [
                                                                    'lit',
-                                                                   '<p>Enter a list of problems separated by blanks, e.g., 2-17 3-9.</p>
+                                                                   '<p>Enter a list of problems separated by blanks, e.g., 32-3 33-2.</p>
 <form method="POST" action="'
                                                                  ],
                                                                  [

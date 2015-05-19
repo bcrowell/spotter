@@ -21,6 +21,7 @@ my $version_of_spotter = '3.0.3';
    # ... and also change the number in Makefile
 my $spotter_js_dir = "/spotter_js/$version_of_spotter";
 
+my $log_level = 5; # normal is 2, 5 is for debugging
 
 use Spotter;
 use Login;
@@ -68,7 +69,8 @@ InstructorInterface->authen->config(
       $hash1 = FileTree::get_par_from_file(undef,$info_file,'password_hash');
     }
     my $hash2 = Digest::SHA::sha1_base64("spotter_instructor_password",$password);
-    if ($hash1 eq $hash2) {return $username} else {return undef}
+    log_entry(5,"checking password for user $username");
+    if ($hash1 eq $hash2) {log_entry(1,"user $username logged in"); return $username} else {log_entry(1,"user $username, incorrect password"); return undef}
   } ],
   POST_LOGIN_RUNMODE => 'do_logged_in',
   LOGIN_RUNMODE => 'public_do_login_form',
@@ -84,6 +86,7 @@ InstructorInterface->authen->protected_runmodes(qr/^(?!public_)/); # runmodes no
 sub setup {
   my $self = shift;
   my $run_mode = 'public_do_login_form';
+  log_entry(5,"entering setup()");
   if (($self->authen->username)=~/\w/) {
     $run_mode = 'do_logged_in';
   }
@@ -101,10 +104,24 @@ sub setup {
   # Use current path as template path,
   # i.e. the template is in the same directory as this script
   $self->tmpl_path('./');
+  log_entry(5,"exiting setup()");
 }
 
 sub data_dir {
   return 'data'; # relative to cwd, which is typically .../cgi-bin/spotter3
+}
+
+sub log_entry {
+  my ($level,$message) = @_; # level 2 is normal, 5 is for debugging
+  if ($level>$log_level) {return}
+  my $filename = log_file();
+  open(FILE,">>$filename") or die "error writing to log file $filename, $!";
+  print FILE localtime().' '.$message."\n";
+  close FILE;
+}
+
+sub log_file {
+  return data_dir() . "/log/instructor.log";
 }
 
 sub user_dir {
@@ -125,6 +142,7 @@ sub session_id {
 sub public_do_login_form {
   my $self = shift;
 
+  log_entry(5,"entering public_do_login_form()");
   my $login = Login->new('',0);
   $self->authen->logout();
   $session = CGI::Session->new() or die $session->errstr;
@@ -140,20 +158,25 @@ sub public_do_login_form {
     }
   }
   $session->param('referer',$referer);
+  log_entry(5,"exiting public_do_login_form()");
   return run_interface($login,'public_do_login_form',0,$session);
 }
 
 sub public_log_in {
   my $self = shift;
+  log_entry(5,"entering public_log_in()");
   my $login = Login->new('',0);
   $session = CGI::Session->load(session_id()) or die CGI::Session->errstr();
+  log_entry(5,"exiting public_log_in()");
   return run_interface($login,'public_log_in',1,$session);
 }
 
 sub do_logged_in {
   my $self = shift;
+  log_entry(5,"entering do_logged_in()");
   my $login = Login->new($self->authen->username,1);
   $session = CGI::Session->load(session_id()) or die CGI::Session->errstr();
+  log_entry(5,"exiting do_logged_in()");
   return run_interface($login,'do_logged_in',1,$session);
 }
 
@@ -161,11 +184,13 @@ sub do_logged_in {
 # not logged out, and get mad when their answers aren't recorded. Instead, we send them back to the referrer page.
 sub do_log_out {
   my $self = shift;
+  log_entry(5,"entering do_log_out()");
   $self->authen->logout();
   my $login = Login->new('',0);
   # see notes in public_anonymous_use() for why we make session stuff even if they're not logged in
   $session = CGI::Session->load(session_id()) or die CGI::Session->errstr();
   # Don't do ->clear(), because we want to keep the referer info so they can go back to class's web page.
+  log_entry(5,"exiting do_log_out()");
   return run_interface($login,'do_log_out',0,$session);
 }
 
@@ -179,6 +204,8 @@ sub run_interface {
   my $run_mode = shift;
   my $need_cookies = shift;
   my $session = shift; # CGI::Session object, http://search.cpan.org/~markstos/CGI-Session-4.48/lib/CGI/Session.pm
+
+  log_entry(5,"entering run_interface()");
 
   my $fatal_error = "";
   my $date_string = current_date_string_no_time();
@@ -232,6 +259,8 @@ sub run_interface {
   if ($run_mode eq 'public_do_login_form') {$out = $out . do_login_form()}
 
   $session->flush();
+
+  log_entry(5,"exiting run_interface()");
 
   return $out; # all the html that has been accumulated above.
 
@@ -337,7 +366,7 @@ sub do_work {
   my $step = Url::par('step')+0;
   $out = $out . function_header("View work: step $step");
   if ($step==1) {
-    my $default_due_date = "2017-01-01 10:00:00";
+    my $default_due_date = localtime_to_time_input_string(localtime(time));
     $out = $out . tint('instructor_interface.view_work_form',
       'action_url'=>make_link(REPLACE=>'step',REPLACE_WITH=>'2',DELETE=>'(user|select_term|select_class)'),
       'default_due_date'=>$default_due_date
@@ -346,10 +375,19 @@ sub do_work {
   if ($step==2) {
     my $probs = $SpotterHTMLUtil::cgi->param('problemsToView');
     my $answer_file = $SpotterHTMLUtil::cgi->param('answerFile');
-    my $due_date = $SpotterHTMLUtil::cgi->param('dueDate');
+    my $due_date = $SpotterHTMLUtil::cgi->param('dueDate').":00";
     ($out,$fatal_error) = get_work($out,$probs,$answer_file,$due_date,$user_dir,$class,$term,$session,$fatal_error);
   }
   return ($out,$fatal_error);
+}
+
+sub localtime_to_time_input_string { # minutes arbitrarily set to :00
+  my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = @_;
+  $year = $year+1900;
+  $mon = sprintf("%02d",$mon+1);
+  $mday = sprintf("%02d",$mday);
+  $hour = sprintf("%02d",$hour);
+  return "$year-$mon-$mday $hour:00";
 }
 
 sub get_work {
@@ -388,6 +426,7 @@ sub get_work {
       }
     }
     my $parts_list = join(',',(keys %parts));
+    if ($parts_list eq '') {return ($out,"Problem $ch-$num was never attempted by any student; is it really online?")}
     push @prob_parts,$parts_list;
     #$out = $out . "<p>problem $ch-$num has parts $parts_list</p>";
   }
