@@ -90,7 +90,9 @@ sub respond_to_query {
         }
         my $q = single_quotify_with_newlines($feedback);
         my $js_to_render_math = 'render_math(\'answer\',\'out\',new Array(\'' . join("','",@vbl_list) . '\'))';
-        $return = $return .  "<script>function do_render_math() {if (mathjax_disabled()<=0) {$js_to_render_math ;} }</script>\n";
+        $return = $return .  "<script>$js_to_render_math</script>\n";
+            # ... render the first time even if there's no keystroke, e.g, if the page was reloaded
+            #     doesn't actually work ... why not?
         $return = $return .  "<script>var answer_feedback = $q;</script>\n".$SpotterHTMLUtil::cgi->startform."\n"; # see note in TODO
         $return = $return .  "<p>";
         my $default = "";
@@ -121,7 +123,7 @@ sub respond_to_query {
           $return = $return .  "Answer:<br/>"
         }
         my $onkeyup = '';
-        if ($is_symbolic) {$onkeyup = "onkeyup=\"do_render_math();\""}
+        if ($is_symbolic) {$onkeyup = "onkeyup=\"$js_to_render_math\""}
         
         $return = $return .  <<JS;
             <input type="text" name="answer" id="answer" tabindex="1"  value="$default" size="60"  $onkeyup />
