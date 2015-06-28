@@ -63,7 +63,20 @@ header_html=<<__html__
         }
       });
     </script>
-    <script src='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=AM_HTMLorMML.js'></script>
+    <script>
+      function load_external_js(url) {
+        // http://stackoverflow.com/a/15521523/1142217
+        var head = document.getElementsByTagName('head')[0];
+        var js = document.createElement("script");
+        js.type = "text/javascript";
+        js.src = url;
+        head.appendChild(js);
+      }
+      var is_mobile = (screen.width<480); // mathjax won't perform acceptably on mobile devices
+      if (!is_mobile) {
+        load_external_js("https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=AM_HTMLorMML.js");
+      }
+    </script>
   
 <style type="text/css">$_css</style>
 </HEAD>
