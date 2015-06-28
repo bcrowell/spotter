@@ -104,10 +104,22 @@ asciimath_js_code=<<__js__
   // problems: operators like eq will get treated as variables, rendered as e_(q)
   // Escaped dollar signs in the following for use with Tint.
   function format_variable_name(x) {
-    y = x.replace(/^(alpha|beta|gamma|delta|epsilon|zeta|eta|theta|iota|kappa|lambda|mu|nu|xi|omicron|pi|rho|sigma|tau|upsilon|phi|chi|psi|omega|Alpha|Beta|Gamma|Delta|Epsilon|Zeta|Eta|Theta|Iota|Kappa|Lambda|Mu|Nu|Xi|Omicron|Pi|Rho|Sigma|Tau|Upsilon|Phi|Chi|Psi|Omega)(.*)$/g,"$1_($2)");
-    if (y!=x) return y;
-    y = x.replace(/^(.)(.+)$/,"$1_($2)");
-    return y;
+    var greek =  "alpha|beta|gamma|delta|epsilon|zeta|eta|theta|iota|kappa|lambda|mu|nu|xi|omicron|pi|rho|sigma|tau|upsilon|phi|chi|psi|omega|"
+                +"Alpha|Beta|Gamma|Delta|Epsilon|Zeta|Eta|Theta|Iota|Kappa|Lambda|Mu|Nu|Xi|Omicron|Pi|Rho|Sigma|Tau|Upsilon|Phi|Chi|Psi|Omega";
+
+    // just a Greek character and nothing else:
+    var r = new RegExp("^("+greek+")$");
+    if (r.test(x)) { return x; }
+
+    // a Greek character followed by something, e.g., mu0:
+    var r = new RegExp("^("+greek+")(.+)");
+    if (r.test(x)) { return x.replace(r,"\$1_(\$2)");}
+
+    // a multi-letter variable name, e.g., Ftotal:
+    r = /^(.)(.+)$/;
+    if (r.test(x)) { return x.replace(r,"\$1_(\$2)");}
+
+    return x;
   }
 
 //--------------- end javascript code -------------------
