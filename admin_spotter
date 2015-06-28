@@ -501,7 +501,8 @@ sub add_instructor {
   $args = pick_main_dir($args); # prompts them to create it
   my $main_dir = $args->{MAIN_DIR};
   print "The instructor's main directory is $main_dir\n";
-  if (! -e $main_dir) {print "Error -- $main_dir doesn't exist."; return $args}
+  if (! -e $main_dir) {print "Error -- $main_dir didn't get created."; return $args}
+  system "chgrp $server_group $main_dir";
   print "Enter the instructor's full name\n";
   my $name = <STDIN>;
   chomp $name;

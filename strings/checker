@@ -77,8 +77,8 @@ your password at the bottom of the form and press the Change Settings button.</i
 __form__
 
 explain_mathml=<<__explain__
-<p>As you type, Spotter's interpretation of your input will show up here: <span id="out"></span> <br/>
-(This feature requires Firefox, or Internet Explorer 6 with <a href="http://www.dessci.com/en/products/mathplayer/welcome.asp">MathPlayer</a>.)</p>
+<p>As you type, Spotter's interpretation of your input will show up here: <span id="out">``</span> <br/>
+</p>
 __explain__
 
 ----------------------------------------------------------------

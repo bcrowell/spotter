@@ -89,6 +89,10 @@ sub respond_to_query {
           $feedback = $feedback . $response;
         }
         my $q = single_quotify_with_newlines($feedback);
+        my $js_to_render_math = 'render_math(\'answer\',\'out\',new Array(\'' . join("','",@vbl_list) . '\'))';
+        $return = $return .  "<script>$js_to_render_math</script>\n";
+            # ... render the first time even if there's no keystroke, e.g, if the page was reloaded
+            #     doesn't actually work ... why not?
         $return = $return .  "<script>var answer_feedback = $q;</script>\n".$SpotterHTMLUtil::cgi->startform."\n"; # see note in TODO
         $return = $return .  "<p>";
         my $default = "";
@@ -109,7 +113,6 @@ sub respond_to_query {
             $return = $return .  "Try again:<br/>";
           }
           if ($login->logged_in()) {
-            SpotterHTMLUtil::debugging_output("in respond_to_query, ref(tree)=".ref($tree)."="); # qwe
             $recording_err = record_work(LOGIN=>$login,FILE_TREE=>$tree,ANSWER=>$ans,IS_CORRECT=>$student_answer_is_correct,
                      RESPONSE=>$response,DESCRIPTION=>$p->description(),QUERY=>$query);
             $confirm_recorded = $student_answer_is_correct && ($recording_err eq '');
@@ -120,7 +123,7 @@ sub respond_to_query {
           $return = $return .  "Answer:<br/>"
         }
         my $onkeyup = '';
-        if ($is_symbolic) {$onkeyup = 'onkeyup="render(\'answer\',\'out\',new Array(\'' . join("','",@vbl_list) . '\'))"'}
+        if ($is_symbolic) {$onkeyup = "onkeyup=\"$js_to_render_math\""}
         
         $return = $return .  <<JS;
             <input type="text" name="answer" id="answer" tabindex="1"  value="$default" size="60"  $onkeyup />

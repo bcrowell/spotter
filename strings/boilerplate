@@ -31,12 +31,43 @@ header_html=<<__html__
 <HTML xmlns="http://www.w3.org/1999/xhtml"><HEAD>
 <TITLE>$title</TITLE>
 <META HTTP-EQUIV="Pragma" CONTENT="no-cache"/>
-<! -- stuff for ASCIIMath: -->
+<! -- stuff for MathJax and ASCIIMath: -->
+
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Register.StartupHook("AsciiMath Jax Config",function () {
+        var AM = MathJax.InputJax.AsciiMath.AM;
+        var sym = AM.symbols;
+
+        // Treat the following as functions, i.e., don't italicize them.
+        var functions_to_add = ["asin","acos","atan","asinh","acosh","atanh"];
+        function add_function(name) {
+          sym.push(
+            {input:name,  tag:"mo", output:name, tex:null, ttype:AM.TOKEN.UNARY, func:true}
+          );
+        }
+        for (var i=0; i < functions_to_add.length; i++) {
+          add_function(functions_to_add[i]);
+        }
+
+        // Don't treat the following as symbols.
+        var functions_to_delete = ["Lim","det","dim","mod","gcd","lcm","lub","glb","min","max",
+                                   "hat","bar","vec","ul"];
+        function delete_function(name) {
+          for (var i=0; i < sym.length; i++) {
+            if (name===sym[i].input) { sym.splice(i,1); break; }
+          }
+        }
+        for (var i=0; i < functions_to_delete.length; i++) {
+          delete_function(functions_to_delete[i]);
+        }
+      });
+    </script>
+    <script src='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=AM_HTMLorMML.js'></script>
+  
 <style type="text/css">$_css</style>
 </HEAD>
-<script src="$spotter_js_dir/ASCIIMathML.js"></script>
-<body  bgcolor="white" onload="init_asciimath_inputs()">
+<body  bgcolor="white">
 __html__
 
 default_banner_html=<<__html__
@@ -50,68 +81,34 @@ default_banner_html=<<__html__
 __html__
 
 footer_html=<<__html__
-<p>On-the fly rendering of mathematics is done by Peter Jipsen's <a href=\"http://asciimathml.sourceforge.net\">ASCIIMath</a>.</p>
 $footer_file
 </body></html>
 __html__
 
 asciimath_js_code=<<__js__
 //--------------- begin javascript code -------------------
-//script to render Spotter input using MathML, via ASCIIMath
+//script to render Spotter input using ASCIIMath and MathJax
 
-//a modification by B. Crowell of the script ASCIIMathCalculator.js by Peter Jipsen
-
-//(c) Peter Jipsen http://www.chapman.edu/~jipsen
-//(c) B. Crowell
-
-//Requires http://www.chapman.edu/~jipsen/mathml/ASCIIMathML.js
-
-//License: GNU General Public License (http://www.gnu.org/copyleft/gpl.html)
-
-
-AMinitSymbols();
-
-function init_asciimath_inputs() {
-  var li = document.getElementsByTagName("input");
-  var st;
-  for (var i=0; i<li.length; i++) {
-    st = li[i].getAttribute("onkeyup");
-    if (st!=null) eval(String(st).replace(/function anonymous\(\)/,""));
+  function render_math(inputId,outputId,variables) {
+    var str = document.getElementById(inputId).value;
+    var math = MathJax.Hub.getAllJax(outputId)[0]; // http://docs.mathjax.org/en/latest/typeset.html
+    for (var i=0; i<variables.length; i++) {
+      var u = variables[i];
+      var v = format_variable_name(u);
+      if (u!=v) str = str.replace(new RegExp(u,"g"),v);
+    }
+    MathJax.Hub.Queue(["Text",math,str]);
   }
-}
 
+  // examples: alpha1 -> alpha_(1) , mus -> mu_(s) , Ftotal -> F_(total)
+  // problems: operators like eq will get treated as variables, rendered as e_(q)
+  // Escaped dollar signs in the following for use with Tint.
+  function format_variable_name(x) {
+    y = x.replace(/^(alpha|beta|gamma|delta|epsilon|zeta|eta|theta|iota|kappa|lambda|mu|nu|xi|omicron|pi|rho|sigma|tau|upsilon|phi|chi|psi|omega|Alpha|Beta|Gamma|Delta|Epsilon|Zeta|Eta|Theta|Iota|Kappa|Lambda|Mu|Nu|Xi|Omicron|Pi|Rho|Sigma|Tau|Upsilon|Phi|Chi|Psi|Omega)(.*)$/g,"$1_($2)");
+    if (y!=x) return y;
+    y = x.replace(/^(.)(.+)$/,"$1_($2)");
+    return y;
+  }
 
-function render(inputId,outputId,variables) {
-  var str = document.getElementById(inputId).value;
-  var outnode = document.getElementById(outputId);
-  var n = outnode.childNodes.length;
-  for (var i=0; i<n; i++)
-    outnode.removeChild(outnode.firstChild);
-  str = str.replace(/\*\*/g,"^"); // Spotter allows fortran-style use of ** for exponentiation
-  var cooked = new Array();
-  for (var i=0; i<variables.length; i++) {
-   var u = variables[i];
-   var v = format_variable_name(u);
-   if (u!=v) str = str.replace(new RegExp(u,"g"),v);
-  }
-  if (AMisMathMLavailable() != null) {
-    str = '--This feature is not available in your browser.--';
-  }
-  else  {
-    str = "`"+str+"`";
-  }
-  outnode.appendChild(document.createTextNode(str));
-  AMprocessNode(outnode);
-}
-
-// exmaples: alpha1 -> alpha_(1) , mus -> mu_(s) , Ftotal -> F_(total)
-// problems: operators like eq will get treated as variables, rendered as e_(q)
-// Escaped dollar signs in the following for use with tint.
-function format_variable_name(x) {
-  y = x.replace(/^(alpha|beta|gamma|delta|epsilon|zeta|eta|theta|iota|kappa|lambda|mu|nu|xi|omicron|pi|rho|sigma|tau|upsilon|phi|chi|psi|omega|Alpha|Beta|Gamma|Delta|Epsilon|Zeta|Eta|Theta|Iota|Kappa|Lambda|Mu|Nu|Xi|Omicron|Pi|Rho|Sigma|Tau|Upsilon|Phi|Chi|Psi|Omega)(.*)\$/g,"\$1_(\$2)");
-  if (y!=x) return y;
-  y = x.replace(/^(.)(.+)\$/,"\$1_(\$2)");
-  return y;
-}
 //--------------- end javascript code -------------------
 __js__
