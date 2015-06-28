@@ -63,11 +63,51 @@ header_html=<<__html__
         }
       });
     </script>
-    <script src='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=AM_HTMLorMML.js'></script>
+    <script>
+      function load_external_js(url) {
+        // http://stackoverflow.com/a/15521523/1142217
+        var head = document.getElementsByTagName('head')[0];
+        var js = document.createElement("script");
+        js.type = "text/javascript";
+        js.src = url;
+        head.appendChild(js);
+      }
+      // values >=1 mean disabled
+      var MATHJAX_ENABLED = 0;
+      var MATHJAX_DISABLED_MOBILE = 1; // mathjax doesn't have acceptable performance on mobile devices
+      var MATHJAX_DISABLED_BY_HAND = 2; // not implemented yet
+      function mathjax_disabled() {
+        var is_mobile =  (screen.width<480);
+        if (is_mobile) {return MATHJAX_DISABLED_MOBILE;} else {return MATHJAX_ENABLED;}
+      }
+      if (mathjax_disabled()<=0) {
+        load_external_js("https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=AM_HTMLorMML.js");
+      }
+      function explain_mathjax() {
+        var d = mathjax_disabled();
+        var expl = document.getElementById("explain_mathml");
+        if (d==MATHJAX_ENABLED) {
+          expl.innerHTML = "As you type, Spotter's interpretation of your input will show up here: <span id=\"out\">``</span> <br/>";
+        }
+        if (d==MATHJAX_DISABLED_MOBILE) {
+          expl.innerHTML = "Your answer is not being rendered into human math notation as you type it in, because you appear to be on a mobile device.";
+        }
+        if (d==MATHJAX_DISABLED_BY_HAND) {
+          expl.innerHTML = "Your answer is not being rendered into human math notation as you type it in, because you have disabled that feature.";
+        }
+      }
+      function my_onload_stuff() {
+        explain_mathjax();
+        if (mathjax_disabled()<=0) {
+          do_render_math(); // render the first time even if there's no keystroke, e.g, if the page was reloaded
+                            // ...doesn't work reliably?
+        }
+      }
+    </script>
   
 <style type="text/css">$_css</style>
 </HEAD>
-<body  bgcolor="white">
+<body  bgcolor="white" onload="my_onload_stuff();">
 __html__
 
 default_banner_html=<<__html__

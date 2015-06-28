@@ -77,8 +77,9 @@ your password at the bottom of the form and press the Change Settings button.</i
 __form__
 
 explain_mathml=<<__explain__
-<p>As you type, Spotter's interpretation of your input will show up here: <span id="out">``</span> <br/>
-</p>
+  <p id="explain_mathml">
+    ``
+  </p>
 __explain__
 
 ----------------------------------------------------------------
