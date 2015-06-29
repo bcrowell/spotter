@@ -296,8 +296,7 @@ sub debugging_stuff {
 sub top_of_page {
   my ($out,$fatal_error,$spotter_js_dir,$tree,$data_dir,$basic_file_name,$xmlfile,$need_cookies) = @_;
   $out = $out .  SpotterHTMLUtil::HeaderHTML($spotter_js_dir)
-              .  SpotterHTMLUtil::BannerHTML($tree)
-              .  SpotterHTMLUtil::asciimath_js_code();
+              .  SpotterHTMLUtil::BannerHTML($tree);
   my $cache_parsed_xml;
   ($out,$fatal_error,$cache_parsed_xml) = embedded_js($out,$fatal_error,$data_dir,$basic_file_name,$xmlfile,$need_cookies);
   return ($out,$fatal_error,$cache_parsed_xml);
@@ -307,6 +306,7 @@ sub bottom_of_page {
   my ($out,$tree) = @_;
   $out = $out .  "<p>time: ".current_date_string()." CST</p>\n";
   $out = $out .  SpotterHTMLUtil::accumulated_debugging_output();
+  $out = $out .  "<script src='$spotter_js_dir/mathjax_rendering.js'></script>";
   $out = $out .  SpotterHTMLUtil::FooterHTML($tree);
   return $out;
 }

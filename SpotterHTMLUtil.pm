@@ -118,10 +118,4 @@ sub super_and_sub {
     return $text;
 }
 
-sub asciimath_js_code {
-  my $am = tint('boilerplate.asciimath_js_code');
-  return "<script>mathcolor=\"Black\"</script><script>$am</script>";
-}
-
-
 return 1;
