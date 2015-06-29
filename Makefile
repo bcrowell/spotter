@@ -29,14 +29,16 @@ install: Tint.pm
 	@# ... http://serverfault.com/questions/611696/detecting-in-a-script-whether-apache2-root-is-var-www-or-var-www-html
 	perl -e 'if (!-d "$(WEB_SERVER_DATA)") {print "error: WEB_SERVER_DATA = $(WEB_SERVER_DATA) in Makefile, but that directory does not exist; edit the Makefile and set this correctly for your server, e.g., to /var/www"; exit(-1)}'
 	perl -e 'if (-e "$(NEW_TINT)") {system("cp $(NEW_TINT) .")}'
-	install -d $(JS)
 	install -d $(CGI)
 	install -d $(ANSWERS)
 	install --mode=775 -d $(DATA)
 	chgrp $(WEB_SERVER_GROUP) $(DATA)
 	install *.cgi *.pm config.json $(CGI)
 	install --mode=644 sample.xml $(ANSWERS)
-	install *.js $(JS)	
+	# in the following, on ubuntu systems from after ca. 2014, we need /var/www/html rather than /var/www;
+        #         can work around with a symbolic link: ln -s /var/www/spotter_js /var/www/html/spotter_js
+	install -d $(JS)
+	install *.js $(JS)
 
 depend:
 	# The following is for debian, ubuntu, etc.:

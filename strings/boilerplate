@@ -31,54 +31,9 @@ header_html=<<__html__
 <HTML xmlns="http://www.w3.org/1999/xhtml"><HEAD>
 <TITLE>$title</TITLE>
 <META HTTP-EQUIV="Pragma" CONTENT="no-cache"/>
-<! -- stuff for MathJax and ASCIIMath: -->
-
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <script type="text/x-mathjax-config">
-      MathJax.Hub.Register.StartupHook("AsciiMath Jax Config",function () {
-        var AM = MathJax.InputJax.AsciiMath.AM;
-        var sym = AM.symbols;
-
-        // Treat the following as functions, i.e., don't italicize them.
-        var functions_to_add = ["asin","acos","atan","asinh","acosh","atanh"];
-        function add_function(name) {
-          sym.push(
-            {input:name,  tag:"mo", output:name, tex:null, ttype:AM.TOKEN.UNARY, func:true}
-          );
-        }
-        for (var i=0; i < functions_to_add.length; i++) {
-          add_function(functions_to_add[i]);
-        }
-
-        // Don't treat the following as symbols.
-        var functions_to_delete = ["Lim","det","dim","mod","gcd","lcm","lub","glb","min","max",
-                                   "hat","bar","vec","ul"];
-        function delete_function(name) {
-          for (var i=0; i < sym.length; i++) {
-            if (name===sym[i].input) { sym.splice(i,1); break; }
-          }
-        }
-        for (var i=0; i < functions_to_delete.length; i++) {
-          delete_function(functions_to_delete[i]);
-        }
-      });
-    </script>
-    <script>
-      function load_external_js(url) {
-        // http://stackoverflow.com/a/15521523/1142217
-        var head = document.getElementsByTagName('head')[0];
-        var js = document.createElement("script");
-        js.type = "text/javascript";
-        js.src = url;
-        head.appendChild(js);
-      }
-      var is_mobile = (screen.width<480); // mathjax won't perform acceptably on mobile devices
-      if (!is_mobile) {
-        load_external_js("https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=AM_HTMLorMML.js");
-      }
-    </script>
-  
 <style type="text/css">$_css</style>
+<script src="$spotter_js_dir/mathjax_startup.js"></script>
 </HEAD>
 <body  bgcolor="white">
 __html__
@@ -103,7 +58,10 @@ asciimath_js_code=<<__js__
 //script to render Spotter input using ASCIIMath and MathJax
 
   function render_math(inputId,outputId,variables) {
-    var str = document.getElementById(inputId).value;
+    var e = document.getElementById(inputId);
+    if (e===null) {console.log("warning: inputId "+inputId+" not found in render_math()"); return;}
+          // probably because I attempt this before the whole page is rendered, so it doesn't exist yet
+    var str = e.value;
     var math = MathJax.Hub.getAllJax(outputId)[0]; // http://docs.mathjax.org/en/latest/typeset.html
     for (var i=0; i<variables.length; i++) {
       var u = variables[i];
