@@ -141,10 +141,11 @@ sub session_id {
 
 sub public_do_login_form {
   my $self = shift;
-
   log_entry(5,"entering public_do_login_form()");
   my $login = Login->new('',0);
-  $self->authen->logout();
+  log_entry(5,"in public_do_login_form() ... 001, ref self='".(ref $self)."'");
+  if (ref $self) {$self->authen->logout()}
+  log_entry(5,"in public_do_login_form() ... 002");
   $session = CGI::Session->new() or die $session->errstr;
   $session->expire(3600); 
   my $referer = CGI::referer(); # if they log out, send them back to the class's web page, which has the URL that gets

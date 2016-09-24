@@ -162,6 +162,7 @@ sub description {
   return $self->{DESCRIPTION};
 }
 
+# Used for multiple choice, which is implemented through a general interface to javascript.
 sub type {
   my $self = shift;
   if (@_) {$self->{TYPE} = shift;}

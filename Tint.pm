@@ -5,91 +5,6 @@
         our @EXPORT_OK = ('tint');
         {
           my $VAR1 = {
-          'instructor_interface.header_html' => {
-                                                  'args' => [
-                                                              'title'
-                                                            ],
-                                                  'text' => [
-                                                              [
-                                                                'lit',
-                                                                '<?xml version="1.0"?>
-<?xml-stylesheet type="text/xsl" href="http://www.w3.org/Math/XSL/mathml.xsl"?>
-<HTML xmlns="http://www.w3.org/1999/xhtml"><HEAD>
-<TITLE>'
-                                                              ],
-                                                              [
-                                                                'ref',
-                                                                'title'
-                                                              ],
-                                                              [
-                                                                'lit',
-                                                                '</TITLE>
-</HEAD>
-'
-                                                              ]
-                                                            ]
-                                                },
-          'checker.explain_answer_list' => {
-                                             'args' => [],
-                                             'text' => [
-                                                         [
-                                                           'lit',
-                                                           '<p>The following is a list of the correct answers that have been recorded for you. If a correct answer
-is missing from this list, it may be because you weren\'t logged in when you entered the answer. Even if
-your correct answers shows up here, that doesn\'t necessarily mean it was on time. Note that all the times shown below
-are for the time zone of the server (PST for lightandmatter.com). If you got some parts of a problem
-right but not others, only the ones you got right are listed here.</p>
-'
-                                                         ]
-                                                       ]
-                                           },
-          'journal.edit_text_form' => {
-                                        'args' => [
-                                                    'url_link',
-                                                    'text'
-                                                  ],
-                                        'text' => [
-                                                    [
-                                                      'lit',
-                                                      '<form method="POST" action="'
-                                                    ],
-                                                    [
-                                                      'ref',
-                                                      'url_link'
-                                                    ],
-                                                    [
-                                                      'lit',
-                                                      '">
-<textarea name="journalText" rows="30" cols="85">
-'
-                                                    ],
-                                                    [
-                                                      'ref',
-                                                      'text'
-                                                    ],
-                                                    [
-                                                      'lit',
-                                                      '
-</textarea><br/>
-<input type="submit" name="submitJournalButton" value="Save">\'
-</form>\\n
-'
-                                                    ]
-                                                  ]
-                                      },
-          'checker.explain_email_privacy' => {
-                                               'text' => [
-                                                           [
-                                                             'lit',
-                                                             '<p><b>E-mail addresses</b></p>
-<p>Important privacy information: People\'s e-mail addresses only appear here if they want them to be available to
-other people in the class; this can be controlled from the account settings page. Please do not give these e-mail
-addresses to anyone outside the class.</p>
-'
-                                                           ]
-                                                         ],
-                                               'args' => []
-                                             },
           'user.activate_account' => {
                                        'text' => [
                                                    [
@@ -110,21 +25,423 @@ the class to have access to this e-mail address.<br>
                                                  ],
                                        'args' => []
                                      },
-          'checker.anonymous_forbidden' => {
-                                             'text' => [
-                                                         [
-                                                           'lit',
-                                                           '   <p>Anonymous access is not allowed from your location. Please log in.</p>
+          'instructor_interface.banner_html' => {
+                                                  'text' => [
+                                                              [
+                                                                'lit',
+                                                                '    <h1>Instructor\'s interface for Spotter</h1>
+    <p id="cookie_message"></p>
+    <script>
+    <!-- http://stackoverflow.com/a/4603313 -->
+    var cookieEnabled=(navigator.cookieEnabled)? true : false;
+    if (typeof navigator.cookieEnabled=="undefined" && !cookieEnabled){ 
+        document.cookie="testcookie";
+        cookieEnabled=(document.cookie.indexOf("testcookie")!=-1)? true : false;
+    }
+    document.getElementById("cookie_message").innerHTML =
+           (cookieEnabled) ? "" : "<b>Warning: Cookies are disabled. You will not be able to log in.</b>";
+    </script>
+    <p><a href="http://www.lightandmatter.com/spotter/spotter.html">About Spotter</a>.<p/>
+
 '
-                                                         ]
+                                                              ]
+                                                            ],
+                                                  'args' => []
+                                                },
+          'instructor_interface.interpret_spreadsheet_form' => {
+                                                                 'text' => [
+                                                                             [
+                                                                               'lit',
+                                                                               'In the spaces below, enter the numbers of the columns containing the relevant data. You don\'t need to
+fill in every blank.
+<form method="POST" action="'
+                                                                             ],
+                                                                             [
+                                                                               'ref',
+                                                                               'action_url'
+                                                                             ],
+                                                                             [
+                                                                               'lit',
+                                                                               '">
+      Last name in column: <input type="text" name="lastNameColumn"><br/>  
+      First name in column: <input type="text" name="firstNameColumn"><br/>  
+      Last,first in column: <input type="text" name="lastFirstNameColumn"><br/>  
+      Student ID in column: <input type="text" name="IDColumn"><br/>  
+<br>
+<input type="submit" name="submitColumnsButton" value="Submit">
+</form> 
+'
+                                                                             ]
+                                                                           ],
+                                                                 'args' => [
+                                                                             'action_url'
+                                                                           ]
+                                                               },
+          'instructor_interface.add_student_form' => {
+                                                       'text' => [
+                                                                   [
+                                                                     'lit',
+                                                                     '<form method="POST" action="'
+                                                                   ],
+                                                                   [
+                                                                     'ref',
+                                                                     'action_url'
+                                                                   ],
+                                                                   [
+                                                                     'lit',
+                                                                     '">
+      First name: <input type="text" name="firstName"><br/>
+      Last name: <input type="text" name="lastName"><br/>
+      Student ID: <input type="text" name="studentID"><br/>
+<br>
+<input type="submit" name="submitAddStudentButton" value="Add">
+</form>
+'
+                                                                   ]
+                                                                 ],
+                                                       'args' => [
+                                                                   'action_url'
+                                                                 ]
+                                                     },
+          'user.blank_password' => {
+                                     'text' => [
+                                                 [
+                                                   'lit',
+                                                   'You didn\'t enter a password. Please use the back button in your browser and try again.
+'
+                                                 ]
+                                               ],
+                                     'args' => []
+                                   },
+          'responses.sig_fig_lecture' => {
+                                           'text' => [
+                                                       [
+                                                         'lit',
+                                                         'The numerical part of your answer, '
                                                        ],
-                                             'args' => []
-                                           },
+                                                       [
+                                                         'ref',
+                                                         'raw_input'
+                                                       ],
+                                                       [
+                                                         'lit',
+                                                         ', has either too many or too few significant figures.
+As a rule of thumb, the precision of the result of a calculation is limited by the precision of the least accurate piece of data used to calculate it.
+A common mistake is to believe in the fallacy of false precision suggested by your calculator\'s willingness to display a result with many digits.
+when you communicate such a result to someone else, you are misleading them (and possibly also deluding yourself).
+The precision of a result can also be limited by all the simplifying assumptions that went into translating a real-world situation into
+equations; for example, even if I know that a rock is being dropped from a height of 1.000000 m in a gravitational field of 9.82237 m/s<sup>2</sup>,
+I can\'t calculate the time it takes to hit the ground to 6 sig figs, because at that level of precision, air resistance would be an important factor.
+'
+                                                       ]
+                                                     ],
+                                           'args' => [
+                                                       'raw_input'
+                                                     ]
+                                         },
+          'instructor_interface.create_term_form' => {
+                                                       'text' => [
+                                                                   [
+                                                                     'lit',
+                                                                     '<p>Each term has a name like s2003 for spring 2003, etc. The name must consist of
+a single letter followed by four digits.</p>
+
+<form method="POST" action="'
+                                                                   ],
+                                                                   [
+                                                                     'ref',
+                                                                     'action_url'
+                                                                   ],
+                                                                   [
+                                                                     'lit',
+                                                                     '">
+      Name of term: <input type="text" name="termName"><br/>
+<br>
+<input type="submit" name="createTermButton" value="Create">
+</form>
+'
+                                                                   ]
+                                                                 ],
+                                                       'args' => [
+                                                                   'action_url'
+                                                                 ]
+                                                     },
+          'instructor_interface.view_work_form' => {
+                                                     'text' => [
+                                                                 [
+                                                                   'lit',
+                                                                   '<p>Enter a list of problems separated by blanks, e.g., 32-3 33-2.</p>
+<form method="POST" action="'
+                                                                 ],
+                                                                 [
+                                                                   'ref',
+                                                                   'action_url'
+                                                                 ],
+                                                                 [
+                                                                   'lit',
+                                                                   '">
+      Problems: <input type="text" size="100" name="problemsToView"><br/>
+      Due date: <input type="text" value="'
+                                                                 ],
+                                                                 [
+                                                                   'ref',
+                                                                   'default_due_date'
+                                                                 ],
+                                                                 [
+                                                                   'lit',
+                                                                   '" name="dueDate"><br/>
+      Answer file: <input type="text" value="lm" name="answerFile"><br/>
+<br>
+<input type="submit" name="viewWorkButton" value="View">
+</form>
+'
+                                                                 ]
+                                                               ],
+                                                     'args' => [
+                                                                 'action_url',
+                                                                 'default_due_date'
+                                                               ]
+                                                   },
+          'instructor_interface.add_many_form' => {
+                                                    'text' => [
+                                                                [
+                                                                  'lit',
+                                                                  '<p>This interface is designed so that you can cut and paste from either a spreadsheet or a web page
+in which a class roster is formatted as an html table. When you paste into the text box below,
+the columns show show up with tab characters separating them. You need columns containing the students\'
+names and also (optionally) their student ID numbers.
+</p>
+<form method="POST" action="'
+                                                                ],
+                                                                [
+                                                                  'ref',
+                                                                  'action_url'
+                                                                ],
+                                                                [
+                                                                  'lit',
+                                                                  '">
+      Cut and paste here:<br/> <textarea name="spreadsheet" cols="100" rows="10"></textarea>
+<br>
+<input type="submit" name="addManySubmitButton" value="Submit">
+</form>
+'
+                                                                ]
+                                                              ],
+                                                    'args' => [
+                                                                'action_url'
+                                                              ]
+                                                  },
+          'user.not_same_password_twice' => {
+                                              'text' => [
+                                                          [
+                                                            'lit',
+                                                            'You didn\'t type the same password twice. Please use the back button in your browser and try again.
+'
+                                                          ]
+                                                        ],
+                                              'args' => []
+                                            },
+          'instructor_interface.show_spreadsheet' => {
+                                                       'text' => [
+                                                                   [
+                                                                     'lit',
+                                                                     '<div style="width: 1200px; height: 150px; overflow: scroll;">
+  <table border="1">
+    '
+                                                                   ],
+                                                                   [
+                                                                     'ref',
+                                                                     'table'
+                                                                   ],
+                                                                   [
+                                                                     'lit',
+                                                                     '
+  </table>
+</div>
+'
+                                                                   ]
+                                                                 ],
+                                                       'args' => [
+                                                                   'table'
+                                                                 ]
+                                                     },
+          'journal.is_locked' => {
+                                   'text' => [
+                                               [
+                                                 'lit',
+                                                 'This is your final version, and it can no longer be edited.
+'
+                                               ]
+                                             ],
+                                   'args' => []
+                                 },
+          'user.forgot_password' => {
+                                      'text' => [
+                                                  [
+                                                    'lit',
+                                                    '<p><i>Forgot your password?</i><br>
+If you\'ve forgotten your password, enter your student ID number and click on this button. Information will be e-mailed to you about 
+how to set a new password.<br>
+<form method="POST" action="'
+                                                  ],
+                                                  [
+                                                    'ref',
+                                                    'url'
+                                                  ],
+                                                  [
+                                                    'lit',
+                                                    '">
+  Student ID: <input type="hidden" name="username" value="'
+                                                  ],
+                                                  [
+                                                    'ref',
+                                                    'username'
+                                                  ],
+                                                  [
+                                                    'lit',
+                                                    '">
+  <input type="text" name="id" size="10"> 
+  <input type="submit" value="Send e-mail.">
+</form>
+'
+                                                  ]
+                                                ],
+                                      'args' => [
+                                                  'url',
+                                                  'username'
+                                                ]
+                                    },
+          'instructor_interface.show_og' => {
+                                              'text' => [
+                                                          [
+                                                            'lit',
+                                                            '<p>The following code can be pasted.
+into an OpenGrade file. (After pasting it in, you\'ll need to set the
+password again so that the digital watermark will be valid.)</p>
+<div style="width: 1200px; height: 150px; overflow: scroll;">
+    '
+                                                          ],
+                                                          [
+                                                            'ref',
+                                                            'code'
+                                                          ],
+                                                          [
+                                                            'lit',
+                                                            '
+</div>
+'
+                                                          ]
+                                                        ],
+                                              'args' => [
+                                                          'code'
+                                                        ]
+                                            },
+          'checker.explain_email_privacy' => {
+                                               'text' => [
+                                                           [
+                                                             'lit',
+                                                             '<p><b>E-mail addresses</b></p>
+<p>Important privacy information: People\'s e-mail addresses only appear here if they want them to be available to
+other people in the class; this can be controlled from the account settings page. Please do not give these e-mail
+addresses to anyone outside the class.</p>
+'
+                                                           ]
+                                                         ],
+                                               'args' => []
+                                             },
+          'journal.old_versions_form' => {
+                                           'text' => [
+                                                       [
+                                                         'lit',
+                                                         '<h3>Old Versions</h3>\\nYou have '
+                                                       ],
+                                                       [
+                                                         'ref',
+                                                         'n'
+                                                       ],
+                                                       [
+                                                         'lit',
+                                                         ' old versions you can go back and look at. To view one, enter a number from 1 to '
+                                                       ],
+                                                       [
+                                                         'ref',
+                                                         'n'
+                                                       ],
+                                                       [
+                                                         'lit',
+                                                         '\\n<br/>
+<form method="POST" action="'
+                                                       ],
+                                                       [
+                                                         'ref',
+                                                         'url'
+                                                       ],
+                                                       [
+                                                         'lit',
+                                                         '">
+<input type="text" name="version">
+<input type="submit" name="oldJournalButton" value="View">\'
+</form>
+<p><b>If you have edited your text, make sure to save it before doing this!</b></p>
+'
+                                                       ]
+                                                     ],
+                                           'args' => [
+                                                       'n',
+                                                       'n',
+                                                       'url'
+                                                     ]
+                                         },
+          'journal.edit_page' => {
+                                   'text' => [
+                                               [
+                                                 'lit',
+                                                 '<p>If you scroll down, first you\'ll see your current version of your text with all the formatting, and then below that you\'ll 
+see a window in which you can edit your text. To make a paragraph break, put in a blank line between the paragraphs. 
+To make a section heading, put the heading on a line by itself, with an equals sign, =, at the beginning of the line. 
+Subsection headings are made with a ==, and subsubsections with a ===. 
+To make a table of data, put a * at the beginning of each line.</p>
+<p>Your changes will not be saved until you click on the Save button! To avoid losing changes by mistake, you should make 
+a habit of saving your text very often as you work on it.</p>
+
+<h2>Last Saved Version</h2>'
+                                               ],
+                                               [
+                                                 'ref',
+                                                 'cooked_text'
+                                               ],
+                                               [
+                                                 'lit',
+                                                 '<p/>
+<h2>Edit</h2>
+'
+                                               ],
+                                               [
+                                                 'ref',
+                                                 'form'
+                                               ],
+                                               [
+                                                 'lit',
+                                                 '
+'
+                                               ],
+                                               [
+                                                 'ref',
+                                                 'old'
+                                               ],
+                                               [
+                                                 'lit',
+                                                 '
+'
+                                               ]
+                                             ],
+                                   'args' => [
+                                               'cooked_text',
+                                               'form',
+                                               'old'
+                                             ]
+                                 },
           'boilerplate.header_html' => {
-                                         'args' => [
-                                                     'title',
-                                                     'spotter_js_dir'
-                                                   ],
                                          'text' => [
                                                      [
                                                        'lit',
@@ -180,192 +497,44 @@ h5.journal
 <body  bgcolor="white">
 '
                                                      ]
+                                                   ],
+                                         'args' => [
+                                                     'title',
+                                                     'spotter_js_dir'
                                                    ]
                                        },
-          'instructor_interface.interpret_spreadsheet_form' => {
-                                                                 'text' => [
-                                                                             [
-                                                                               'lit',
-                                                                               'In the spaces below, enter the numbers of the columns containing the relevant data. You don\'t need to
-fill in every blank.
-<form method="POST" action="'
-                                                                             ],
-                                                                             [
-                                                                               'ref',
-                                                                               'action_url'
-                                                                             ],
-                                                                             [
-                                                                               'lit',
-                                                                               '">
-      Last name in column: <input type="text" name="lastNameColumn"><br/>  
-      First name in column: <input type="text" name="firstNameColumn"><br/>  
-      Last,first in column: <input type="text" name="lastFirstNameColumn"><br/>  
-      Student ID in column: <input type="text" name="IDColumn"><br/>  
-<br>
-<input type="submit" name="submitColumnsButton" value="Submit">
-</form> 
+          'checker.anonymous_forbidden' => {
+                                             'text' => [
+                                                         [
+                                                           'lit',
+                                                           '   <p>Anonymous access is not allowed from your location. Please log in.</p>
 '
-                                                                             ]
-                                                                           ],
-                                                                 'args' => [
-                                                                             'action_url'
-                                                                           ]
-                                                               },
-          'checker.anonymous_forbidden_but_exempt' => {
-                                                        'args' => [],
-                                                        'text' => [
-                                                                    [
-                                                                      'lit',
-                                                                      '   <p>(Anonymous access is not normally allowed from your location,
-       but this answer file is exempt from that restriction.)</p>
+                                                         ]
+                                                       ],
+                                             'args' => []
+                                           },
+          'instructor_interface.footer_html' => {
+                                                  'text' => [
+                                                              [
+                                                                'lit',
+                                                                '</body></html>
 '
-                                                                    ]
-                                                                  ]
-                                                      },
-          'user.forgot_password' => {
-                                      'text' => [
-                                                  [
-                                                    'lit',
-                                                    '<p><i>Forgot your password?</i><br>
-If you\'ve forgotten your password, enter your student ID number and click on this button. Information will be e-mailed to you about 
-how to set a new password.<br>
-<form method="POST" action="'
-                                                  ],
-                                                  [
-                                                    'ref',
-                                                    'url'
-                                                  ],
-                                                  [
-                                                    'lit',
-                                                    '">
-  Student ID: <input type="hidden" name="username" value="'
-                                                  ],
-                                                  [
-                                                    'ref',
-                                                    'username'
-                                                  ],
-                                                  [
-                                                    'lit',
-                                                    '">
-  <input type="text" name="id" size="10"> 
-  <input type="submit" value="Send e-mail.">
-</form>
-'
-                                                  ]
-                                                ],
-                                      'args' => [
-                                                  'url',
-                                                  'username'
-                                                ]
-                                    },
-          'instructor_interface.add_student_form' => {
-                                                       'args' => [
-                                                                   'action_url'
-                                                                 ],
-                                                       'text' => [
-                                                                   [
-                                                                     'lit',
-                                                                     '<form method="POST" action="'
-                                                                   ],
-                                                                   [
-                                                                     'ref',
-                                                                     'action_url'
-                                                                   ],
-                                                                   [
-                                                                     'lit',
-                                                                     '">
-      First name: <input type="text" name="firstName"><br/>
-      Last name: <input type="text" name="lastName"><br/>
-      Student ID: <input type="text" name="studentID"><br/>
-<br>
-<input type="submit" name="submitAddStudentButton" value="Add">
-</form>
-'
-                                                                   ]
-                                                                 ]
-                                                     },
-          'user.blank_password' => {
-                                     'args' => [],
-                                     'text' => [
-                                                 [
-                                                   'lit',
-                                                   'You didn\'t enter a password. Please use the back button in your browser and try again.
-'
-                                                 ]
-                                               ]
-                                   },
-          'instructor_interface.password_form' => {
-                                                    'args' => [
-                                                                'url',
-                                                                'username',
-                                                                'url'
-                                                              ],
-                                                    'text' => [
-                                                                [
-                                                                  'lit',
-                                                                  '<form method="POST" action="'
-                                                                ],
-                                                                [
-                                                                  'ref',
-                                                                  'url'
-                                                                ],
-                                                                [
-                                                                  'lit',
-                                                                  '">
-  <input type="hidden" name="authen_username" value="'
-                                                                ],
-                                                                [
-                                                                  'ref',
-                                                                  'username'
-                                                                ],
-                                                                [
-                                                                  'lit',
-                                                                  '">
-  <input type="hidden" name="destination" value="'
-                                                                ],
-                                                                [
-                                                                  'ref',
-                                                                  'url'
-                                                                ],
-                                                                [
-                                                                  'lit',
-                                                                  '" />
-  Password:
-    <input type="password" name="authen_password" size="20" maxlength="20"><br>
-  <input type="submit" value="Log in.">
-</form>
-<p>
-'
-                                                                ]
                                                               ]
-                                                  },
-          'instructor_interface.create_term_form' => {
-                                                       'text' => [
-                                                                   [
-                                                                     'lit',
-                                                                     '<p>Each term has a name like s2003 for spring 2003, etc. The name must consist of
-a single letter followed by four digits.</p>
-
-<form method="POST" action="'
-                                                                   ],
-                                                                   [
-                                                                     'ref',
-                                                                     'action_url'
-                                                                   ],
-                                                                   [
-                                                                     'lit',
-                                                                     '">
-      Name of term: <input type="text" name="termName"><br/>
-<br>
-<input type="submit" name="createTermButton" value="Create">
-</form>
+                                                            ],
+                                                  'args' => []
+                                                },
+          'responses.units_lecture' => {
+                                         'text' => [
+                                                     [
+                                                       'lit',
+                                                       'Your answer has the wrong units, so either you made a mistake in your algebra or you entered your answer incorrectly.
+A typical mistake would be to enter a+b/c+d when you really meant (a+b)/(c+d).
+Scroll down for more information on how to enter answers into Spotter.
 '
-                                                                   ]
-                                                                 ],
-                                                       'args' => [
-                                                                   'action_url'
-                                                                 ]
-                                                     },
+                                                     ]
+                                                   ],
+                                         'args' => []
+                                       },
           'boilerplate.footer_html' => {
                                          'text' => [
                                                      [
@@ -383,76 +552,104 @@ a single letter followed by four digits.</p>
                                                      'footer_file'
                                                    ]
                                        },
-          'checker.explain_mathml' => {
-                                        'args' => [],
-                                        'text' => [
-                                                    [
-                                                      'lit',
-                                                      '<p>As you type, Spotter\'s interpretation of your input will show up here: <span id="out">``</span> <br/>
-</p>
-'
-                                                    ]
-                                                  ]
-                                      },
-          'journal.old_versions_form' => {
-                                           'text' => [
-                                                       [
-                                                         'lit',
-                                                         '<h3>Old Versions</h3>\\nYou have '
-                                                       ],
-                                                       [
-                                                         'ref',
-                                                         'n'
-                                                       ],
-                                                       [
-                                                         'lit',
-                                                         ' old versions you can go back and look at. To view one, enter a number from 1 to '
-                                                       ],
-                                                       [
-                                                         'ref',
-                                                         'n'
-                                                       ],
-                                                       [
-                                                         'lit',
-                                                         '\\n<br/>
-<form method="POST" action="'
-                                                       ],
-                                                       [
-                                                         'ref',
-                                                         'url'
-                                                       ],
-                                                       [
-                                                         'lit',
-                                                         '">
-<input type="text" name="version">
-<input type="submit" name="oldJournalButton" value="View">\'
+          'user.password_form' => {
+                                    'text' => [
+                                                [
+                                                  'lit',
+                                                  '<form method="POST" action="'
+                                                ],
+                                                [
+                                                  'ref',
+                                                  'url'
+                                                ],
+                                                [
+                                                  'lit',
+                                                  '">
+  <input type="hidden" name="authen_username" value="'
+                                                ],
+                                                [
+                                                  'ref',
+                                                  'username'
+                                                ],
+                                                [
+                                                  'lit',
+                                                  '">
+  <input type="hidden" name="destination" value="'
+                                                ],
+                                                [
+                                                  'ref',
+                                                  'url'
+                                                ],
+                                                [
+                                                  'lit',
+                                                  '" />
+  '
+                                                ],
+                                                [
+                                                  'ref',
+                                                  'prompt'
+                                                ],
+                                                [
+                                                  'lit',
+                                                  '
+    <input type="password" name="authen_password" size="20" maxlength="20"><br>
+  '
+                                                ],
+                                                [
+                                                  'ref',
+                                                  'activation'
+                                                ],
+                                                [
+                                                  'lit',
+                                                  '
+  <input type="submit" value="Log in.">
 </form>
-<p><b>If you have edited your text, make sure to save it before doing this!</b></p>
+If you\'re not '
+                                                ],
+                                                [
+                                                  'ref',
+                                                  'real_name'
+                                                ],
+                                                [
+                                                  'lit',
+                                                  ', <a href="'
+                                                ],
+                                                [
+                                                  'ref',
+                                                  'not_me_url'
+                                                ],
+                                                [
+                                                  'lit',
+                                                  '">click here</a>.<p>
 '
-                                                       ]
-                                                     ],
-                                           'args' => [
-                                                       'n',
-                                                       'n',
-                                                       'url'
-                                                     ]
-                                         },
-          'boilerplate.default_banner_html' => {
-                                                 'text' => [
-                                                             [
-                                                               'lit',
-                                                               '    <table><tr><td><img src="http://www.lightandmatter.com/spotter/spotterlogo.jpg" width="123" height="184"></td><td>
-    <h1>Spotter</h1>
-    <p>A numerical and symbolic answer<br/>
-       checker for math and science students.</p>
-    <p><a href="http://www.lightandmatter.com/spotter/spotter.html">About Spotter</a>.<p/>
-
-    </td></tr></table>
+                                                ]
+                                              ],
+                                    'args' => [
+                                                'url',
+                                                'username',
+                                                'url',
+                                                'prompt',
+                                                'activation',
+                                                'real_name',
+                                                'not_me_url'
+                                              ]
+                                  },
+          'journal.instructions' => {
+                                      'text' => [
+                                                  [
+                                                    'lit',
+                                                    '<p>If you scroll down, first you\'ll see your current version of your text with all the formatting, and then below that you\'ll 
+see a window in which you can edit your text. To make a paragraph break, put in a blank line between the paragraphs. 
+To make a section heading, put the heading on a line by itself, with an equals sign, =, at the beginning of the line. 
+Subsection headings are made with a ==, and subsubsections with a ===. 
+To make a table of data, put a * at the beginning of each line.</p>
+<p>Your changes will not be saved until you click on the Save button! To avoid losing changes by mistake, you should make 
+a habit of saving your text very often as you work on it.</p>
 '
-                                                             ]
-                                                           ],
-                                                 'args' => []
-                                               },
+                                                  ]
+                                                ],
+                                      'args' => []
+                                    },
           'check_if_cookies_enabled' => {
                                           'text' => [
                                                       [
@@ -500,8 +697,176 @@ a single letter followed by four digits.</p>
                                                     ],
                                           'args' => []
                                         },
+          'instructor_interface.header_html' => {
+                                                  'text' => [
+                                                              [
+                                                                'lit',
+                                                                '<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="http://www.w3.org/Math/XSL/mathml.xsl"?>
+<HTML xmlns="http://www.w3.org/1999/xhtml"><HEAD>
+<TITLE>'
+                                                              ],
+                                                              [
+                                                                'ref',
+                                                                'title'
+                                                              ],
+                                                              [
+                                                                'lit',
+                                                                '</TITLE>
+</HEAD>
+'
+                                                              ]
+                                                            ],
+                                                  'args' => [
+                                                              'title'
+                                                            ]
+                                                },
+          'instructor_interface.password_form' => {
+                                                    'text' => [
+                                                                [
+                                                                  'lit',
+                                                                  '<form method="POST" action="'
+                                                                ],
+                                                                [
+                                                                  'ref',
+                                                                  'url'
+                                                                ],
+                                                                [
+                                                                  'lit',
+                                                                  '">
+  <input type="hidden" name="authen_username" value="'
+                                                                ],
+                                                                [
+                                                                  'ref',
+                                                                  'username'
+                                                                ],
+                                                                [
+                                                                  'lit',
+                                                                  '">
+  <input type="hidden" name="destination" value="'
+                                                                ],
+                                                                [
+                                                                  'ref',
+                                                                  'url'
+                                                                ],
+                                                                [
+                                                                  'lit',
+                                                                  '" />
+  Password:
+    <input type="password" name="authen_password" size="20" maxlength="20"><br>
+  <input type="submit" value="Log in.">
+</form>
+<p>
+'
+                                                                ]
+                                                              ],
+                                                    'args' => [
+                                                                'url',
+                                                                'username',
+                                                                'url'
+                                                              ]
+                                                  },
+          'checker.no_equals_sign_in_answers' => {
+                                                   'text' => [
+                                                               [
+                                                                 'lit',
+                                                                 '   <p>You don\'t need to type in an equation, just an expression. Everything
+   to the left of the equals sign has been disregarded.</p>
+'
+                                                               ]
+                                                             ],
+                                                   'args' => []
+                                                 },
+          'checker.explain_mathml' => {
+                                        'text' => [
+                                                    [
+                                                      'lit',
+                                                      '<p>As you type, Spotter\'s interpretation of your input will show up here: <span id="out">``</span> <br/>
+</p>
+'
+                                                    ]
+                                                  ],
+                                        'args' => []
+                                      },
+          'checker.time_out' => {
+                                  'text' => [
+                                              [
+                                                'lit',
+                                                '            Too many answers have been entered in a short time period on this computer and/or this account.
+             To discourage random guessing, longer and longer wait times are required if you
+             keep on entering answers over and over.
+             If you\'re having trouble doing this problem, maybe you should get help from your instructor!
+             You have entered more than '
+                                              ],
+                                              [
+                                                'ref',
+                                                'number'
+                                              ],
+                                              [
+                                                'lit',
+                                                ' answers within 
+             '
+                                              ],
+                                              [
+                                                'ref',
+                                                'interval'
+                                              ],
+                                              [
+                                                'lit',
+                                                ' seconds.
+             This waiting period will expire in '
+                                              ],
+                                              [
+                                                'ref',
+                                                'expire'
+                                              ],
+                                              [
+                                                'lit',
+                                                ' seconds.
+'
+                                              ]
+                                            ],
+                                  'args' => [
+                                              'number',
+                                              'interval',
+                                              'expire'
+                                            ]
+                                },
+          'journal.edit_text_form' => {
+                                        'text' => [
+                                                    [
+                                                      'lit',
+                                                      '<form method="POST" action="'
+                                                    ],
+                                                    [
+                                                      'ref',
+                                                      'url_link'
+                                                    ],
+                                                    [
+                                                      'lit',
+                                                      '">
+<textarea name="journalText" rows="30" cols="85">
+'
+                                                    ],
+                                                    [
+                                                      'ref',
+                                                      'text'
+                                                    ],
+                                                    [
+                                                      'lit',
+                                                      '
+</textarea><br/>
+<input type="submit" name="submitJournalButton" value="Save">\'
+</form>\\n
+'
+                                                    ]
+                                                  ],
+                                        'args' => [
+                                                    'url_link',
+                                                    'text'
+                                                  ]
+                                      },
           'checker.anonymous_time_out' => {
-                                            'args' => [],
                                             'text' => [
                                                         [
                                                           'lit',
@@ -510,18 +875,9 @@ a single letter followed by four digits.</p>
               users to be the same person.)</p>
 '
                                                         ]
-                                                      ]
+                                                      ],
+                                            'args' => []
                                           },
-          'checker.do_not_type_units' => {
-                                           'text' => [
-                                                       [
-                                                         'lit',
-                                                         '   <p>For this problem, don\'t type in the units. Use the pop-up menu on the right.</p>
-'
-                                                       ]
-                                                     ],
-                                           'args' => []
-                                         },
           'email.not_yet_sent' => {
                                     'text' => [
                                                 [
@@ -601,287 +957,89 @@ a single letter followed by four digits.</p>
                                                 'body'
                                               ]
                                   },
-          'checker.no_equals_sign_in_answers' => {
-                                                   'text' => [
-                                                               [
-                                                                 'lit',
-                                                                 '   <p>You don\'t need to type in an equation, just an expression. Everything
-   to the left of the equals sign has been disregarded.</p>
+          'checker.explain_answer_list' => {
+                                             'text' => [
+                                                         [
+                                                           'lit',
+                                                           '<p>The following is a list of the correct answers that have been recorded for you. If a correct answer
+is missing from this list, it may be because you weren\'t logged in when you entered the answer. Even if
+your correct answers shows up here, that doesn\'t necessarily mean it was on time. Note that all the times shown below
+are for the time zone of the server (PST for lightandmatter.com). If you got some parts of a problem
+right but not others, only the ones you got right are listed here.</p>
 '
-                                                               ]
-                                                             ],
-                                                   'args' => []
-                                                 },
-          'journal.instructions' => {
-                                      'args' => [],
-                                      'text' => [
-                                                  [
-                                                    'lit',
-                                                    '<p>If you scroll down, first you\'ll see your current version of your text with all the formatting, and then below that you\'ll 
-see a window in which you can edit your text. To make a paragraph break, put in a blank line between the paragraphs. 
-To make a section heading, put the heading on a line by itself, with an equals sign, =, at the beginning of the line. 
-Subsection headings are made with a ==, and subsubsections with a ===. 
-To make a table of data, put a * at the beginning of each line.</p>
-<p>Your changes will not be saved until you click on the Save button! To avoid losing changes by mistake, you should make 
-a habit of saving your text very often as you work on it.</p>
+                                                         ]
+                                                       ],
+                                             'args' => []
+                                           },
+          'checker.exempt_from_time_out' => {
+                                              'text' => [
+                                                          [
+                                                            'lit',
+                                                            '          (This answer file is exempt from waiting time requirements, but 
+               you have entered more than '
+                                                          ],
+                                                          [
+                                                            'ref',
+                                                            'number'
+                                                          ],
+                                                          [
+                                                            'lit',
+                                                            ' answers within 
+               '
+                                                          ],
+                                                          [
+                                                            'ref',
+                                                            'interval'
+                                                          ],
+                                                          [
+                                                            'lit',
+                                                            ' seconds.)
 '
-                                                  ]
-                                                ]
-                                    },
-          'instructor_interface.view_work_form' => {
-                                                     'args' => [
-                                                                 'action_url',
-                                                                 'default_due_date'
-                                                               ],
-                                                     'text' => [
-                                                                 [
-                                                                   'lit',
-                                                                   '<p>Enter a list of problems separated by blanks, e.g., 32-3 33-2.</p>
-<form method="POST" action="'
-                                                                 ],
-                                                                 [
-                                                                   'ref',
-                                                                   'action_url'
-                                                                 ],
-                                                                 [
-                                                                   'lit',
-                                                                   '">
-      Problems: <input type="text" size="100" name="problemsToView"><br/>
-      Due date: <input type="text" value="'
-                                                                 ],
-                                                                 [
-                                                                   'ref',
-                                                                   'default_due_date'
-                                                                 ],
-                                                                 [
-                                                                   'lit',
-                                                                   '" name="dueDate"><br/>
-      Answer file: <input type="text" value="lm" name="answerFile"><br/>
-<br>
-<input type="submit" name="viewWorkButton" value="View">
-</form>
-'
-                                                                 ]
-                                                               ]
-                                                   },
-          'instructor_interface.banner_html' => {
-                                                  'args' => [],
-                                                  'text' => [
-                                                              [
-                                                                'lit',
-                                                                '    <h1>Instructor\'s interface for Spotter</h1>
-    <p><a href="http://www.lightandmatter.com/spotter/spotter.html">About Spotter</a>.<p/>
-
-'
-                                                              ]
-                                                            ]
-                                                },
-          'user.password_form' => {
-                                    'args' => [
-                                                'url',
-                                                'username',
-                                                'url',
-                                                'prompt',
-                                                'activation',
-                                                'real_name',
-                                                'not_me_url'
-                                              ],
-                                    'text' => [
-                                                [
-                                                  'lit',
-                                                  '<form method="POST" action="'
-                                                ],
-                                                [
-                                                  'ref',
-                                                  'url'
-                                                ],
-                                                [
-                                                  'lit',
-                                                  '">
-  <input type="hidden" name="authen_username" value="'
-                                                ],
-                                                [
-                                                  'ref',
-                                                  'username'
-                                                ],
-                                                [
-                                                  'lit',
-                                                  '">
-  <input type="hidden" name="destination" value="'
-                                                ],
-                                                [
-                                                  'ref',
-                                                  'url'
-                                                ],
-                                                [
-                                                  'lit',
-                                                  '" />
-  '
-                                                ],
-                                                [
-                                                  'ref',
-                                                  'prompt'
-                                                ],
-                                                [
-                                                  'lit',
-                                                  '
-    <input type="password" name="authen_password" size="20" maxlength="20"><br>
-  '
-                                                ],
-                                                [
-                                                  'ref',
-                                                  'activation'
-                                                ],
-                                                [
-                                                  'lit',
-                                                  '
-  <input type="submit" value="Log in.">
-</form>
-If you\'re not '
-                                                ],
-                                                [
-                                                  'ref',
-                                                  'real_name'
-                                                ],
-                                                [
-                                                  'lit',
-                                                  ', <a href="'
-                                                ],
-                                                [
-                                                  'ref',
-                                                  'not_me_url'
-                                                ],
-                                                [
-                                                  'lit',
-                                                  '">click here</a>.<p>
-'
-                                                ]
-                                              ]
-                                  },
-          'responses.sig_fig_lecture' => {
+                                                          ]
+                                                        ],
+                                              'args' => [
+                                                          'number',
+                                                          'interval'
+                                                        ]
+                                            },
+          'checker.do_not_type_units' => {
                                            'text' => [
                                                        [
                                                          'lit',
-                                                         'The numerical part of your answer, '
-                                                       ],
-                                                       [
-                                                         'ref',
-                                                         'raw_input'
-                                                       ],
-                                                       [
-                                                         'lit',
-                                                         ', has either too many or too few significant figures.
-As a rule of thumb, the precision of the result of a calculation is limited by the precision of the least accurate piece of data used to calculate it.
-A common mistake is to believe in the fallacy of false precision suggested by your calculator\'s willingness to display a result with many digits.
-when you communicate such a result to someone else, you are misleading them (and possibly also deluding yourself).
-The precision of a result can also be limited by all the simplifying assumptions that went into translating a real-world situation into
-equations; for example, even if I know that a rock is being dropped from a height of 1.000000 m in a gravitational field of 9.82237 m/s<sup>2</sup>,
-I can\'t calculate the time it takes to hit the ground to 6 sig figs, because at that level of precision, air resistance would be an important factor.
+                                                         '   <p>For this problem, don\'t type in the units. Use the pop-up menu on the right.</p>
 '
                                                        ]
                                                      ],
-                                           'args' => [
-                                                       'raw_input'
-                                                     ]
+                                           'args' => []
                                          },
-          'instructor_interface.footer_html' => {
-                                                  'text' => [
-                                                              [
-                                                                'lit',
-                                                                '</body></html>
-'
-                                                              ]
-                                                            ],
-                                                  'args' => []
-                                                },
-          'email.send' => {
-                            'args' => [
-                                        'from_html',
-                                        'to_email',
-                                        'subject',
-                                        'body'
-                                      ],
-                            'text' => [
-                                        [
-                                          'lit',
-                                          '  <table>
-  <tr><td>From:</td><td>'
-                                        ],
-                                        [
-                                          'ref',
-                                          'from_html'
-                                        ],
-                                        [
-                                          'lit',
-                                          '</td></tr>
-  <tr><td>To:</td><td>'
-                                        ],
-                                        [
-                                          'ref',
-                                          'to_email'
-                                        ],
-                                        [
-                                          'lit',
-                                          '</td></tr></table>
-  <tr><td>Subject:</td><td>'
-                                        ],
-                                        [
-                                          'ref',
-                                          'subject'
-                                        ],
-                                        [
-                                          'lit',
-                                          '
-  </td></tr>
-  <tr><td colspan="2">
-  <p>'
-                                        ],
-                                        [
-                                          'ref',
-                                          'body'
-                                        ],
-                                        [
-                                          'lit',
-                                          '</p>
-  </td></tr>
-  </table>
-'
-                                        ]
-                                      ]
-                          },
-          'instructor_interface.create_class_form' => {
+          'checker.anonymous_forbidden_but_exempt' => {
                                                         'text' => [
                                                                     [
                                                                       'lit',
-                                                                      '<p>Each class has a name, which must be a string of digits and lowercase letters.
-</p>
-<form method="POST" action="'
-                                                                    ],
-                                                                    [
-                                                                      'ref',
-                                                                      'action_url'
-                                                                    ],
-                                                                    [
-                                                                      'lit',
-                                                                      '">
-      Name of class (see above): <input type="text" name="className"><br/>
-      Description of class: <input type="text" name="classDescription"><br/>
-<br>
-<input type="submit" name="createClassButton" value="Create">
-</form>
+                                                                      '   <p>(Anonymous access is not normally allowed from your location,
+       but this answer file is exempt from that restriction.)</p>
 '
                                                                     ]
                                                                   ],
-                                                        'args' => [
-                                                                    'action_url'
-                                                                  ]
+                                                        'args' => []
                                                       },
+          'boilerplate.default_banner_html' => {
+                                                 'text' => [
+                                                             [
+                                                               'lit',
+                                                               '    <table><tr><td><img src="http://www.lightandmatter.com/spotter/spotterlogo.jpg" width="123" height="184"></td><td>
+    <h1>Spotter</h1>
+    <p>A numerical and symbolic answer<br/>
+       checker for math and science students.</p>
+    <p><a href="http://www.lightandmatter.com/spotter/spotter.html">About Spotter</a>.<p/>
+
+    </td></tr></table>
+'
+                                                             ]
+                                                           ],
+                                                 'args' => []
+                                               },
           'checker.your_account_form' => {
-                                           'args' => [
-                                                       'url',
-                                                       'email',
-                                                       'emailpublic'
-                                                     ],
                                            'text' => [
                                                        [
                                                          'lit',
@@ -929,227 +1087,13 @@ your password at the bottom of the form and press the Change Settings button.</i
 </form>
 '
                                                        ]
+                                                     ],
+                                           'args' => [
+                                                       'url',
+                                                       'email',
+                                                       'emailpublic'
                                                      ]
                                          },
-          'responses.units_lecture' => {
-                                         'text' => [
-                                                     [
-                                                       'lit',
-                                                       'Your answer has the wrong units, so either you made a mistake in your algebra or you entered your answer incorrectly.
-A typical mistake would be to enter a+b/c+d when you really meant (a+b)/(c+d).
-Scroll down for more information on how to enter answers into Spotter.
-'
-                                                     ]
-                                                   ],
-                                         'args' => []
-                                       },
-          'instructor_interface.add_many_form' => {
-                                                    'text' => [
-                                                                [
-                                                                  'lit',
-                                                                  '<p>This interface is designed so that you can cut and paste from either a spreadsheet or a web page
-in which a class roster is formatted as an html table. When you paste into the text box below,
-the columns show show up with tab characters separating them. You need columns containing the students\'
-names and also (optionally) their student ID numbers.
-</p>
-<form method="POST" action="'
-                                                                ],
-                                                                [
-                                                                  'ref',
-                                                                  'action_url'
-                                                                ],
-                                                                [
-                                                                  'lit',
-                                                                  '">
-      Cut and paste here:<br/> <textarea name="spreadsheet" cols="100" rows="10"></textarea>
-<br>
-<input type="submit" name="addManySubmitButton" value="Submit">
-</form>
-'
-                                                                ]
-                                                              ],
-                                                    'args' => [
-                                                                'action_url'
-                                                              ]
-                                                  },
-          'checker.exempt_from_time_out' => {
-                                              'args' => [
-                                                          'number',
-                                                          'interval'
-                                                        ],
-                                              'text' => [
-                                                          [
-                                                            'lit',
-                                                            '          (This answer file is exempt from waiting time requirements, but 
-               you have entered more than '
-                                                          ],
-                                                          [
-                                                            'ref',
-                                                            'number'
-                                                          ],
-                                                          [
-                                                            'lit',
-                                                            ' answers within 
-               '
-                                                          ],
-                                                          [
-                                                            'ref',
-                                                            'interval'
-                                                          ],
-                                                          [
-                                                            'lit',
-                                                            ' seconds.)
-'
-                                                          ]
-                                                        ]
-                                            },
-          'user.not_same_password_twice' => {
-                                              'args' => [],
-                                              'text' => [
-                                                          [
-                                                            'lit',
-                                                            'You didn\'t type the same password twice. Please use the back button in your browser and try again.
-'
-                                                          ]
-                                                        ]
-                                            },
-          'instructor_interface.show_og' => {
-                                              'args' => [
-                                                          'code'
-                                                        ],
-                                              'text' => [
-                                                          [
-                                                            'lit',
-                                                            '<p>The following code can be pasted.
-into an OpenGrade file. (After pasting it in, you\'ll need to set the
-password again so that the digital watermark will be valid.)</p>
-<div style="width: 1200px; height: 150px; overflow: scroll;">
-    '
-                                                          ],
-                                                          [
-                                                            'ref',
-                                                            'code'
-                                                          ],
-                                                          [
-                                                            'lit',
-                                                            '
-</div>
-'
-                                                          ]
-                                                        ]
-                                            },
-          'journal.is_locked' => {
-                                   'text' => [
-                                               [
-                                                 'lit',
-                                                 'This is your final version, and it can no longer be edited.
-'
-                                               ]
-                                             ],
-                                   'args' => []
-                                 },
-          'checker.time_out' => {
-                                  'text' => [
-                                              [
-                                                'lit',
-                                                '            Too many answers have been entered in a short time period on this computer and/or this account.
-             To discourage random guessing, longer and longer wait times are required if you
-             keep on entering answers over and over.
-             If you\'re having trouble doing this problem, maybe you should get help from your instructor!
-             You have entered more than '
-                                              ],
-                                              [
-                                                'ref',
-                                                'number'
-                                              ],
-                                              [
-                                                'lit',
-                                                ' answers within 
-             '
-                                              ],
-                                              [
-                                                'ref',
-                                                'interval'
-                                              ],
-                                              [
-                                                'lit',
-                                                ' seconds.
-             This waiting period will expire in '
-                                              ],
-                                              [
-                                                'ref',
-                                                'expire'
-                                              ],
-                                              [
-                                                'lit',
-                                                ' seconds.
-'
-                                              ]
-                                            ],
-                                  'args' => [
-                                              'number',
-                                              'interval',
-                                              'expire'
-                                            ]
-                                },
-          'instructor_interface.show_spreadsheet' => {
-                                                       'text' => [
-                                                                   [
-                                                                     'lit',
-                                                                     '<div style="width: 1200px; height: 150px; overflow: scroll;">
-  <table border="1">
-    '
-                                                                   ],
-                                                                   [
-                                                                     'ref',
-                                                                     'table'
-                                                                   ],
-                                                                   [
-                                                                     'lit',
-                                                                     '
-  </table>
-</div>
-'
-                                                                   ]
-                                                                 ],
-                                                       'args' => [
-                                                                   'table'
-                                                                 ]
-                                                     },
-          'instructor_interface.select_student_form' => {
-                                                          'args' => [
-                                                                      'action_url',
-                                                                      'html_for_options'
-                                                                    ],
-                                                          'text' => [
-                                                                      [
-                                                                        'lit',
-                                                                        '<form method="POST" action="'
-                                                                      ],
-                                                                      [
-                                                                        'ref',
-                                                                        'action_url'
-                                                                      ],
-                                                                      [
-                                                                        'lit',
-                                                                        '">
-<select name="select_student">
-'
-                                                                      ],
-                                                                      [
-                                                                        'ref',
-                                                                        'html_for_options'
-                                                                      ],
-                                                                      [
-                                                                        'lit',
-                                                                        '
-</select> 
-<input type="submit" name="submitStudentButton" value="Select">
-</form>
-'
-                                                                      ]
-                                                                    ]
-                                                        },
           'checker.how_to_enter_answers' => {
                                               'text' => [
                                                           [
@@ -1202,55 +1146,122 @@ password again so that the digital watermark will be valid.)</p>
                                                         ],
                                               'args' => []
                                             },
-          'journal.edit_page' => {
-                                   'args' => [
-                                               'cooked_text',
-                                               'form',
-                                               'old'
-                                             ],
-                                   'text' => [
-                                               [
-                                                 'lit',
-                                                 '<p>If you scroll down, first you\'ll see your current version of your text with all the formatting, and then below that you\'ll 
-see a window in which you can edit your text. To make a paragraph break, put in a blank line between the paragraphs. 
-To make a section heading, put the heading on a line by itself, with an equals sign, =, at the beginning of the line. 
-Subsection headings are made with a ==, and subsubsections with a ===. 
-To make a table of data, put a * at the beginning of each line.</p>
-<p>Your changes will not be saved until you click on the Save button! To avoid losing changes by mistake, you should make 
-a habit of saving your text very often as you work on it.</p>
-
-<h2>Last Saved Version</h2>'
-                                               ],
-                                               [
-                                                 'ref',
-                                                 'cooked_text'
-                                               ],
-                                               [
-                                                 'lit',
-                                                 '<p/>
-<h2>Edit</h2>
+          'email.send' => {
+                            'text' => [
+                                        [
+                                          'lit',
+                                          '  <table>
+  <tr><td>From:</td><td>'
+                                        ],
+                                        [
+                                          'ref',
+                                          'from_html'
+                                        ],
+                                        [
+                                          'lit',
+                                          '</td></tr>
+  <tr><td>To:</td><td>'
+                                        ],
+                                        [
+                                          'ref',
+                                          'to_email'
+                                        ],
+                                        [
+                                          'lit',
+                                          '</td></tr></table>
+  <tr><td>Subject:</td><td>'
+                                        ],
+                                        [
+                                          'ref',
+                                          'subject'
+                                        ],
+                                        [
+                                          'lit',
+                                          '
+  </td></tr>
+  <tr><td colspan="2">
+  <p>'
+                                        ],
+                                        [
+                                          'ref',
+                                          'body'
+                                        ],
+                                        [
+                                          'lit',
+                                          '</p>
+  </td></tr>
+  </table>
 '
-                                               ],
-                                               [
-                                                 'ref',
-                                                 'form'
-                                               ],
-                                               [
-                                                 'lit',
-                                                 '
+                                        ]
+                                      ],
+                            'args' => [
+                                        'from_html',
+                                        'to_email',
+                                        'subject',
+                                        'body'
+                                      ]
+                          },
+          'instructor_interface.create_class_form' => {
+                                                        'text' => [
+                                                                    [
+                                                                      'lit',
+                                                                      '<p>Each class has a name, which must be a string of digits and lowercase letters.
+</p>
+<form method="POST" action="'
+                                                                    ],
+                                                                    [
+                                                                      'ref',
+                                                                      'action_url'
+                                                                    ],
+                                                                    [
+                                                                      'lit',
+                                                                      '">
+      Name of class (see above): <input type="text" name="className"><br/>
+      Description of class: <input type="text" name="classDescription"><br/>
+<br>
+<input type="submit" name="createClassButton" value="Create">
+</form>
 '
-                                               ],
-                                               [
-                                                 'ref',
-                                                 'old'
-                                               ],
-                                               [
-                                                 'lit',
-                                                 '
+                                                                    ]
+                                                                  ],
+                                                        'args' => [
+                                                                    'action_url'
+                                                                  ]
+                                                      },
+          'instructor_interface.select_student_form' => {
+                                                          'text' => [
+                                                                      [
+                                                                        'lit',
+                                                                        '<form method="POST" action="'
+                                                                      ],
+                                                                      [
+                                                                        'ref',
+                                                                        'action_url'
+                                                                      ],
+                                                                      [
+                                                                        'lit',
+                                                                        '">
+<select name="select_student">
 '
-                                               ]
-                                             ]
-                                 }
+                                                                      ],
+                                                                      [
+                                                                        'ref',
+                                                                        'html_for_options'
+                                                                      ],
+                                                                      [
+                                                                        'lit',
+                                                                        '
+</select> 
+<input type="submit" name="submitStudentButton" value="Select">
+</form>
+'
+                                                                      ]
+                                                                    ],
+                                                          'args' => [
+                                                                      'action_url',
+                                                                      'html_for_options'
+                                                                    ]
+                                                        }
         };
  # evaluates to my $VAR1 = "...";, which is only evaluated when the module is first imported
           sub tint {

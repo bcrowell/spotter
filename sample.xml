@@ -42,9 +42,9 @@
                 label CDATA #REQUIRED>
 
   <!-- A <problem> tag can have several parts, corresponding to more than one
-       quantity the student is asked to find. 
-       In the future, might want to add a type="mc" for multiple choice,
-       type="free" for free response, not checked by the software.
+       quantity the student is asked to find. The type attribute is used for
+       a general-purpose interface to javascript, and currently this interface
+       is used with type="mc" for multiple choice.
   -->
   <!ELEMENT problem (options|find|var|domain|ans)+>
   <!ATTLIST problem id IDREF #REQUIRED

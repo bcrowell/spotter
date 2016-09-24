@@ -33,6 +33,17 @@ __html__
 
 banner_html=<<__html__
     <h1>Instructor's interface for Spotter</h1>
+    <p id="cookie_message"></p>
+    <script>
+    <!-- http://stackoverflow.com/a/4603313 -->
+    var cookieEnabled=(navigator.cookieEnabled)? true : false;
+    if (typeof navigator.cookieEnabled=="undefined" && !cookieEnabled){ 
+        document.cookie="testcookie";
+        cookieEnabled=(document.cookie.indexOf("testcookie")!=-1)? true : false;
+    }
+    document.getElementById("cookie_message").innerHTML =
+           (cookieEnabled) ? "" : "<b>Warning: Cookies are disabled. You will not be able to log in.</b>";
+    </script>
     <p><a href="http://www.lightandmatter.com/spotter/spotter.html">About Spotter</a>.<p/>
 
 __html__

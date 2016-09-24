@@ -1,3 +1,8 @@
+default:
+	make doc
+	make post
+	make clean
+
 doc:
 	pdflatex doc
 	pdflatex doc

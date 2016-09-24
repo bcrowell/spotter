@@ -70,7 +70,7 @@ sub parse {
   my %args = (
     TOKENS                => [],
     RPN                        => [],
-    BACK_REFS        => {},
+    BACK_REFS        => {}, # see format at top of Messages.pm
     CONSTANTS        => Spotter::standard_cons,
     FUNCTIONS        => Spotter::standard_funs,
     UNITS                => standard_units,

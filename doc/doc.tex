@@ -128,8 +128,7 @@ I recommend that you start by installing the software on a machine
 on your own desktop. That way you can test the software, write your
 own input file, and make sure everything works before trying to get
 it going on your school or webhost's server. On a Mac,
- simply go to System Preferences, opening the Sharing control panel,
-and click the button to turn web sharing on. On a Debian Linux
+do \verb@sudo apachectl start@. On a Debian Linux
 system, do the command \verb@apt-get install apache@.
 
 \mysubsection{perl}
@@ -165,9 +164,11 @@ for other web servers or operating systems.
 \verb@CGI_GENERAL = /usr/lib/cgi-bin@ should be the cgi-bin on your machine (e.g.,
 \verb@/Library/WebServer/CGI-Executables@ on MacOS). 
 
-\verb@WEB_SERVER_GROUP = www-data@ should be the group that your web server runs in.
+\verb@WEB_SERVER_GROUP = www-data@ should be the group that your web server runs in
+(\verb@_www@ on MacOS).
 
-\verb@WEB_SERVER_DATA = /var/www/html@ should be the directory where your web server stores the documents it serves.
+\verb@WEB_SERVER_DATA = /var/www/html@ should be the directory where
+your web server stores the documents it serves (\verb@/Library/WebServer/Documents@).
 
 The file \verb@config.json@ contains a variety of configuration parameters. The two that are most
 likely to be of interest are \verb@language@ (set to English, en, by default) and
@@ -187,17 +188,29 @@ place.
 \mysubsection{enable CGI}
 
 You may need to do something special to enable CGI.
-For example, with apache2 on linux you probably need to do this:
+For example, with apache2 on linux (and possibly on MacOS?) you probably need to do this:
 
 \verb@a2enmod cgi@
 
 \verb@service apache2 restart@
 
+On MacOS X, edit the file \verb@/etc/apache2/httpd.conf@ and uncomment the line 
+
+\verb@#AddHandler cgi-script .cgi@
+
+In the same file, add the following:
+
+\begin{listing}{1}
+<Directory "/Library/WebServer/CGI-Executables">
+  Options ExecCGI
+  AddHandler cgi-script .cgi
+</Directory>
+\end{listing}
 
 \mysubsection{libraries}
 You need to install the following perl libraries:
 
-XML::Parser XML::Simple JSON CGI::Application CGI::Session
+XML::Parser XML::Simple JSON CGI::Application CGI::Session \\
 CGI::Application::Plugin::Authentication Data::Dumper Carp::Always
 
 On Debian or Ubuntu Linux, you can do this with the command \verb@make depend@.
@@ -485,7 +498,7 @@ Filters cannot be used with special values. Special values can't have units.
 The following is a sample of how to write an entry in the answer file
 for a particular problem:
 \begin{listing}{1}
-<problem type="sym" id="deriv_cosine">
+<problem id="deriv_cosine">
   <find id="1">
     The derivative of 3 cos(omega t) with respect to t.
     <var sym="omega" units="s-1">the frequency</var>
@@ -503,8 +516,7 @@ end tag, \verb@</blah>@. The only exception is that if there isn't anything insi
 the tag, as on line 6, then \verb@<blah ...><blah ...>@ can be abbreviated as
 \verb@<blah .../>@. 
 
-Line 1 says that this is a problem requiring a symbolic result (not a numerical
-or multiple-choice problem), and gives the problem a name, \verb@deriv_cosine@.
+Line 1 gives the problem a name, \verb@deriv_cosine@.
 If this problem is number 7 in the book, then you would also
 need the following line near the top of the file:
 
@@ -744,6 +756,69 @@ absent, the tolerance defaults to $\epsilon=0.00001$ (the same as for symbolic p
 When specifying tolerances in scientific notation, use the notation
 \verb@1e-4@, not Spotter's usual \verb@10^-4@.
 
+For the most part, there is no hard distinction between symbolic and numerical problems, and
+there is no qualitative difference in the way the software handles them.
+A numerical problem is simply one that happens to have no variables, and usually a wider
+range of tolerance than the default.
+Therefore it is not necessary to specify explicitly in the input file whether
+a problem is numerical or symbolic. As an exception, if you tell Spotter to check
+the number of significant figures on a problem, the implication is that the problem
+is numerical, and some qualitatively different behavior
+is triggered, as described in more detail below.
+
+Sometimes we want the student to give an exact expression as an answer, e.g.,
+\verb@2/3@, rather than a decimal approximation such as \verb@0.67@. In this situation, it's
+best to say explicitly in the descriptive text something like ``Enter an exact expression,
+not a decimal approximation.'' Otherwise the student may enter 0.67 and not understand why it's
+being marked wrong.
+
+On the other hand, sometimes we \emph{want} the student to enter the result as a decimal
+approximation, so that we can check the number of significant figures. For example, if the
+student is asked to compute the speed of an object that moves 2.00 meters in 3.00 seconds,
+we want them to enter 0.667, not 2/3 or 0.6666667 (which is an error in significant figures).
+This is discussed in the following section.
+
+\mysubsection{checking significant figures}
+Spotter can check your students' answers to see if they have the right number of significant figures.
+If the answer file gives the correct answer to a numerical problem with the optional
+\verb@sig_figs@ tag, then answers will be considered incorrect unless they
+are fully evaluated and have an appropriate number of sig figs. For example, suppose
+the correct answer is listed as
+\verb@<ans e="4.0 kg" tol="0.3" tol_type="add" sig_figs="1-2"/>@. The \verb@sig_figs="1-2"@
+indicates that the result should be given with 1 to 2 sig figs.
+If the student inputs \verb@5@ or \verb@5.67@ (in units of kg), the response is that the answer is incorrect.
+If the student inputs \verb@4.10675432@, the response is that the answer has an inappropriate number
+of significant figures.
+An input of \verb@8/2@ would prompt a complaint that the answer had not been fully evaluated.
+Answers of \verb@4@, or \verb@4.0@, or \verb@4.1@ would all be considered correct.
+
+The number of sig figs is given as a range. Usually what students do wrong is to give too many
+sig figs, implying false precision. There is usually not much point in setting the minimum number
+of sig figs to any value other than 0 or 1.
+
+Spotter understands how to count sig figs in scientific notation, so
+the answer in the example above could be given as \verb@4.0 10^0@ or \verb@4.0*10^0@.
+Even though these inputs involve arithmetic operations such as exponentiation and
+(explicit or implied) multiplication, they are considered to have been fully evaluated.
+An answer such as \verb@10^12@ is considered to have zero sig figs, and as a special case,
+\verb@0@ is also considered to have zero sig figs.
+For problems that are order-of-magnitude estimates, it can make sense to set \verb@sig_figs="0-1"@,
+or even \verb@sig_figs="0"@.
+
+An input like \verb@5500@ is ambiguous; it could have 2, 3, or 4 sig figs. Spotter internally
+considers this to be 2 sig figs. Although some scientists (mostly chemists, it seems) use the presence or absence of a decimal
+point to eliminate this ambiguity, this convention is not universally followed or understood, so Spotter's behavior
+in such a situation is undefined, and you should not count on its behaving in a particular way.
+
+Sometimes a problem will require that the student look up data in a book or online --- e.g.,
+the mass of the electron or the speed of sound. For this reason, it is not possible for
+Spotter to check a student's sig figs as thoroughly as a human reading the entire solution.
+It doesn't know how many sig figs were in the data the student looked up, so it doesn't
+know how many should be in the student's result.
+If the student looks up a value of the data that has inappropriately low precision
+(e.g., g=10 m/s2 in a 3-sig-fig problem), then presumably the answer will be incorrect
+simply because it doesn't fall within the range of tolerance set in the answer file.
+
 \mysubsection{debugging your answer file}\label{debugginganswerfile}
 There are two types of mistakes you can make in your answer file: mistakes in the
 answers, and mistakes in the format. 
@@ -782,46 +857,6 @@ Scholarly Technology Group has a web-based validating parser at
 
 It's a good idea to do this once in a while on general principles. It's
 also a good way to locate a typo that has caused Spotter to crash.
-
-\mysubsection{checking significant figures}
-Spotter can check your students' answers to see if they have the right number of significant figures.
-If the answer file gives the correct answer to a numerical problem with the optional
-\verb@sig_figs@ tag, then answers will be considered incorrect unless they
-are fully evaluated and have an appropriate number of sig figs. For example, suppose
-the correct answer is listed as
-\verb@<ans e="4.0 kg" tol="0.3" tol_type="add" sig_figs="1-2"/>@. The \verb@sig_figs="1-2"@
-indicates that the result should be given with 1 to 2 sig figs.
-If the student inputs \verb@5@ or \verb@5.67@ (in units of kg), the response is that the answer is incorrect.
-If the student inputs \verb@4.10675432@, the response is that the answer has an inappropriate number
-of significant figures.
-An input of \verb@8/2@ would prompt a complaint that the answer had not been fully evaluated.
-Answers of \verb@4@, or \verb@4.0@, or \verb@4.1@ would all be considered correct.
-
-The number of sig figs is given as a range. Usually what students do wrong is to give too many
-sig figs, implying false precision. There is usually not much point in setting the minimum number
-of sig figs to any value other than 0 or 1.
-
-Spotter understands how to count sig figs in scientific notation, so
-the answer in the example above could be given as \verb@4.0 10^0@ or \verb@4.0*10^0@.
-Even though these inputs involve arithmetic operations such as exponentiation and
-(explicit or implied) multiplication, they are considered to have been fully evaluated.
-An answer such as \verb@10^12@ is considered to have zero sig figs.
-For problems that are order-of-magnitude estimates, it can make sense to set \verb@sig_figs="0-1"@,
-or even \verb@sig_figs="0"@.
-
-An input like \verb@5500@ is ambiguous; it could have 2, 3, or 4 sig figs. Spotter internally
-considers this to be 2 sig figs. Although some scientists (mostly chemists, it seems) use the presence or absence of a decimal
-point to eliminate this ambiguity, this convention is not universally followed or understood, so Spotter's behavior
-in such a situation is undefined, and you should not count on its behaving in a particular way.
-
-Sometimes a problem will require that the student look up data in a book or online --- e.g.,
-the mass of the electron or the speed of sound. For this reason, it is not possible for
-Spotter to check a student's sig figs as thoroughly as a human reading the entire solution.
-It doesn't know how many sig figs were in the data the student looked up, so it doesn't
-know how many should be in the student's result.
-If the student looks up a value of the data that has inappropriately low precision
-(e.g., g=10 m/s2 in a 3-sig-fig problem), then presumably the answer will be incorrect
-simply because it doesn't fall within the range of tolerance set in the answer file.
 
 \mysection{Qualitative Questions}\label{qualitative}
 Although I originally designed Spotter to check answers to quantitative questions,
