@@ -88,7 +88,7 @@
 
   <!-- Example: <var sym="tau">torque</var> 
    -->
-  <!ELEMENT var EMPTY>
+  <!ELEMENT var (#PCDATA)>
   <!ATTLIST var sym CDATA #REQUIRED
                 type (float|integer)  "float"
                 units CDATA ""
