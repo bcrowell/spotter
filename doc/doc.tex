@@ -590,16 +590,10 @@ will tell her that her units don't make sense.
 
 \mysubsection{a complete answer file}
 The file \verb@sample.xml@ is a complete working answer file. The following is a
-listing of \verb@sample.xml@, with the long section at the beginning replaced
-by the \verb@...@ on line 3:
+listing of \verb@sample.xml@.
 
 \begin{listing}{1}
 <?xml version="1.0"?>
-<!DOCTYPE spotter [
-...
-]>
-
-<!-- ==================================== -->
 <spotter>
 
 <num id="ohm" label="1"/>
@@ -608,7 +602,7 @@ by the \verb@...@ on line 3:
 
 <!-- ================== chapter 1 ================== -->
 <toc type="chapter" num="1" title="Ohm's Law">
- <!-- ================== calculator -->
+ <!-- ================== Ohm's law -->
    <problem id="ohm">
         <find id="1">
           Solve V=IR for I.
@@ -619,20 +613,14 @@ by the \verb@...@ on line 3:
     </problem>
 </toc>
 </spotter>\end{listing}
- 
- The section omitted at line 3 is called the document type definition (DTD).
- You don't get to change it --- only I do. By copying it faithfully from
- \verb@sample.xml@ into all your own answer files, you ensure that
-  you'll be able to use a validating parser to debug your answer files,
-  as discussed on page \pageref{debugginganswerfile}.
-  
-  Lines 6, 13, and 15 are comments. Make sure not to use double dash anywhere
+   
+  Lines 8 and 10 are comments. Make sure not to use double dash anywhere
   inside such a comment, because a double dash is part of the markers for the
   beginning and end of the comment.
   
-  Lines 7 and 25 are mandatory, and must be the outermost tags in the whole file.
+  Lines 2 and 20 are mandatory, and must be the outermost tags in the whole file.
   
-  Line 11 defines a hierarchical organization with only one level. You can have
+  Line 6 defines a hierarchical organization with only one level. You can have
   more. For instance, if you want to have a single answer file for several books,
   then the outermost level, level 0, would be \verb@book@, and the next level, 1, 
   would be \verb@chapter@.
@@ -850,13 +838,12 @@ Apache error log, which is usually hard to get access to. Suggestions:
 
 1. Start simple, and test early and often.
 
-2. Use a validating XML parser to check your format. Brown University's
-Scholarly Technology Group has a web-based validating parser at
-
-\noindent\verb@http://www.stg.brown.edu/service/xmlvalid/@ \qquad .
-
-It's a good idea to do this once in a while on general principles. It's
-also a good way to locate a typo that has caused Spotter to crash.
+2. Use a validating XML parser to check your format against the file \verb@spotter.dtd@.
+There are web-based services that can do this for you, which typically requires that
+you cut and paste the contents of the DTD file into your answer file as its second line.
+To do this on linux from the command line, you can use the command
+\verb@xmllint --noout --dtdvalid spotter.dtd answers.xml@. The utility xmllint is
+packaged for debian-based systems as part of libxml2-utils.
 
 \mysection{Qualitative Questions}\label{qualitative}
 Although I originally designed Spotter to check answers to quantitative questions,
