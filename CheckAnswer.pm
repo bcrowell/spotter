@@ -91,7 +91,7 @@ sub respond_to_query {
         my $q = single_quotify_with_newlines($feedback);
         $return = $return .  "<script>var variable_list = new Array('".join("','",@vbl_list)."');</script>\n";
         my $js_to_render_math = 'render_math(\'answer\',\'out\',variable_list);';
-        $return = $return .  "<script>var answer_feedback = $q;</script>\n".$SpotterHTMLUtil::cgi->startform."\n"; # see note in TODO
+        $return = $return .  "<script>var answer_feedback = $q;</script>\n".$SpotterHTMLUtil::cgi->start_form."\n"; # see note in TODO
         $return = $return .  "<p>";
         my $default = "";
         my $confirm_recorded = 0;
@@ -132,7 +132,7 @@ JS
         }
         $return = $return .  $SpotterHTMLUtil::cgi->submit(-value=>"Check")."\n";
         $return = $return .  "</p>\n";
-        $return = $return .  "\n".$SpotterHTMLUtil::cgi->endform."\n";
+        $return = $return .  "\n".$SpotterHTMLUtil::cgi->end_form."\n";
         if ($is_symbolic) {
           $return = $return .  tint('checker.explain_mathml');
         }
