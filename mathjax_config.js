@@ -1,4 +1,12 @@
+var mathjax_config_debugging_messages = true;
+function mathjax_config_debug(message) {
+  if (mathjax_config_debugging_messages) {
+    console.log("informational message from mathjax_config.js: "+message);
+  }
+}
+mathjax_config_debug("mathjax_config is being executed.");
 MathJax.Hub.Register.StartupHook("AsciiMath Jax Config",function () {
+  mathjax_config_debug("StartupHook is being executed.");
   var AM = MathJax.InputJax.AsciiMath.AM;
   var sym = AM.symbols;
    // Treat the following as functions, i.e., don't italicize them.

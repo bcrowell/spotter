@@ -11,7 +11,11 @@ function render_math(inputId,outputId,variables) {
   var e = document.getElementById(inputId);
   if (e===null) {console.log("warning: inputId "+inputId+" not found in render_math()"); return;}
         // probably because I attempt this before the whole page is rendered, so it doesn't exist yet
-  if (typeof(MathJax)==='undefined') {console.log("warning: MathJax object undefined in render_math()"); return;}
+  if (typeof(MathJax)==='undefined') {
+    // console.log("warning: MathJax object undefined in render_math()");
+       // ... I think it's probably normal that this happens the first time we're called.
+    return;
+  }
   var str = e.value;
   var math = MathJax.Hub.getAllJax(outputId)[0]; // http://docs.mathjax.org/en/latest/typeset.html
   for (var i=0; i<variables.length; i++) {
