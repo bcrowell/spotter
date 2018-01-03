@@ -1,7 +1,12 @@
 // code to render Spotter input using ASCIIMath and MathJax
 // This should go near the bottom of the page so that the relevant html elements exist before it runs.
 
-render_math("answer","out",variable_list);
+try {
+  render_math("answer","out",variable_list);
+}
+catch(err) {
+  // happens when we're not actually on an answer check page, because variable_list doesn't exist
+}
   // variable_list is a global variable, which is created and initialized in the code output by the perl CGI.
   // Placing this here causes math to get rendered as soon as the page gets loaded, rather than
   // waiting for a keystroke. (Usually the un-rendered data would just look like ``, but it could also
