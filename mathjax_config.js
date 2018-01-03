@@ -1,3 +1,6 @@
+//=============================================================================
+// This file is no longer used. See comment in strings/boilerplate.
+//=============================================================================
 var mathjax_config_debugging_messages = true;
 function mathjax_config_debug(message) {
   if (mathjax_config_debugging_messages) {

@@ -1,4 +1,4 @@
-VERSION = 3.0.4
+VERSION = 3.0.5
 # ... when changing this, also change WebInterface.pm and InstructorInterface.pm
 
 CGI_GENERAL = /usr/lib/cgi-bin

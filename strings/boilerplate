@@ -34,14 +34,14 @@ header_html=<<__html__
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 <style type="text/css">$_css</style>
 <script src="$spotter_js_dir/mathjax_startup.js"></script>
-
-<script type="text/x-mathjax-config">
-console.log("debug 1");
-MathJax.Hub.Register.StartupHook("AsciiMath Jax Config",function () {
-  console.log("debug 2");
-});
-</script>
-
+<!-- ========================================================================= -->
+<!-- The following long block of js code used to be loaded in from the external file
+     mathjax_config.js, through mathjax_startup.js, which only loaded it dynamically
+     if it detected that we weren't on a mobile device. However, at some point around
+     2016 I noticed that this started not working. It seems like mathjax is not able
+     to find and execute this document element if it's dynamically created.
+ -->
+<!-- ========================================================================= -->
 <script type="text/x-mathjax-config">
 var mathjax_config_debugging_messages = true;
 function mathjax_config_debug(message) {
@@ -77,6 +77,7 @@ MathJax.Hub.Register.StartupHook("AsciiMath Jax Config",function () {
   }
 });
 </script>
+<!-- ========================================================================= -->
 
 </HEAD>
 <body  bgcolor="white">

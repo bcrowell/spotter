@@ -22,11 +22,13 @@ function relative_url(filename) {
 
 var is_mobile = (screen.width<480); // mathjax won't perform acceptably on mobile devices
 if (!is_mobile) {
-  load_external_js({src:relative_url("mathjax_config.js"),type:"text/x-mathjax-config"});
+  // load_external_js({src:relative_url("mathjax_config.js"),type:"text/x-mathjax-config"});
     // BUG -- The script doesn't actually seem to get executed. The idea is that because the
     //   type is not text/javascript, it doesn't get immediately executed, and that's intentional.
     //   It's supposed to get executed when mathjax loads. But now that never seems to happen...?
     //   This causes the noticeable bug where typing hbar gives [Math Processing Error].
+    // Because of this bug, the JS code is currently hardcoded inside strings/boilerplate instead
+    // of being dynamically loaded here.
   load_external_js({src:"https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=AM_HTMLorMML.js"});
           // URL may change from time to time, see https://www.mathjax.org/cdn-shutting-down/
 }
