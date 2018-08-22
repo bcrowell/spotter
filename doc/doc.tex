@@ -18,6 +18,7 @@ Creating an Answer File & \pageref{answerfile}\\
 Qualitative Questions & \pageref{qualitative}\\
 Abuse & \pageref{abuse}\\
 Interfacing & \pageref{interfacing}\\
+Web interface for instructors & \pageref{instr-web}\\
 Journals & \pageref{journals}\\
 Bugs  &  \pageref{bugs}\\
 Acknowledgements  &  \pageref{acknowledgements}\\
@@ -941,7 +942,9 @@ the tree (which is shown upside-down, as is customary in computer science).
 You also need to set up this kind of directory tree if you want to use Spotter
 to give students access to their grade reports via the web. My OpenGrade
 grade-recording software is designed to interface with Spotter through this
-kind of directory tree. From the OpenGrade client software, you 
+kind of directory tree. There is also a web-based interface for instructors, described on p.~\pageref{instr-web}.
+
+From the OpenGrade client software, you 
 can post grade reports to the server, and you can also download information
 about the students' answers. You only need to create the \verb@cgi-bin/spotter3@
 directory manually. Everything below that level can be set up using the
@@ -1151,6 +1154,43 @@ way to give them control over their classes is by
 making the \verb@admin_spotter@ script be their login shell. They can
 ssh to the server, enter their password, and be instantly put into the
 script's main menu.
+
+\mysection{Web interface for instructors}\label{instr-web}
+
+The full-featured way for instructors to access grades recorded by spotter is to use OpenGrade, but
+this section describes a simple web interface that can be used instead.
+The url for the instructor is of the form
+
+\verb@http://www.lightandmatter.com/cgi-bin/spotter3/SpotterInstructor.cgi?user=jsmith@ ,
+
+where \verb@jsmith@ is the username assigned to you by the person running the server.
+
+If it's necessary to change the password later, run this command from the command line on a linux machine:
+
+\verb@perl -e "use Digest::SHA; print Digest::SHA::sha1_base64(@
+
+\verb@'spotter_instructor_password','mynewpassword')"@
+
+Edit the text file \verb@jsmith@ and substitute the output of this command in the appropriate place.
+
+The person running the server needs to set up an account for the instructor
+using the \verb@admin_spotter@ script that was packaged along with Spotter.
+It will ask them for a password and server key. The server key will not actually be used
+with this interface, and can be left blank.
+This will create a directory such as 
+\verb@/usr/lib/cgi-bin/spotter3/data/jsmith@, and create
+a plain text file in it, \verb@jsmith.instructor_info@.
+
+When downloading work, the results are displayed as an html table.
+Cutting and pasting into libreoffice spreadsheet seems to work.
+
+This interface is not very sophisticated, and it contains the
+following kludge for problems with multiple parts. If you ask it for
+problem 21-3, it silenty checks and tries to figure out whether
+students put in answers for parts a, b, and c. If those are the ones
+that students have entered answers for, it asumes that those are all
+the ones there are.
+
 
 \mysection{Journals}\label{journals}
 I use ``journals'' as a generic term for text files that students can edit and maintain

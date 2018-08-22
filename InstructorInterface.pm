@@ -623,18 +623,20 @@ sub do_add_many {
     my $lf_col = $SpotterHTMLUtil::cgi->param('lastFirstNameColumn')-1;
     my $id_col = $SpotterHTMLUtil::cgi->param('IDColumn')-1;
     my $json = $session->param('spreadsheet');
+    #$out = $out . "l_col=$l_col f_col=$f_col<p>";
+    #$out = $out . "json=".$json."<p>";
     my $data = from_json($json);
     my @d = ();
     foreach my $r(@$data) {
       my ($last,$first,$id) = ('','','');
-      if ($l_col) {$last = $r->[$l_col]}
-      if ($f_col) {$first = $r->[$f_col]}
-      if ($lf_col) {
+      if ($l_col>=0) {$last = $r->[$l_col]}
+      if ($f_col>=0) {$first = $r->[$f_col]}
+      if ($lf_col>=0) {
         my $lf = $r->[$lf_col];
         $lf =~ /(.*),(.*)/;
         ($last,$first) = ($1,$2);
       }
-      if ($id_col) {$id = $r->[$id_col]}
+      if ($id_col>=0) {$id = $r->[$id_col]}
       $id =~ s/^\@//; # trim leading @ sign from FC ID numbers
       # trim leading and trailing whitespace
       $first =~ s/^\s+//;
