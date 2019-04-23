@@ -9,6 +9,10 @@
 #
 #----------------------------------------------------------------
 
+use FindBin qw( $RealBin );
+use lib $RealBin;
+
+
 use strict;
 use WebInterface;
 WebInterface->new()->run();
